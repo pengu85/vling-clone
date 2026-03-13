@@ -30,10 +30,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useMonitorStore, type TrackedChannel } from "@/stores/monitorStore";
-import { generateMockChannels } from "@/lib/mockData";
+import { generateVideoInsights } from "@/lib/monitorMockData";
 import { formatNumber, formatGrowthRate } from "@/lib/formatters";
 import { CATEGORIES } from "@/domain/categories";
 import type { ChannelSearchResult } from "@/types";
+
+import { MonitorSummaryCards } from "@/components/monitor/MonitorSummaryCards";
+import { FolderSelector } from "@/components/monitor/FolderSelector";
+import { ChannelDetailPanel } from "@/components/monitor/ChannelDetailPanel";
+import { VideoInsights } from "@/components/monitor/VideoInsights";
+import { SimilarChannels, type SimilarChannel } from "@/components/monitor/SimilarChannels";
+
+/* ---------- Mock stats (same seed-based approach) ---------- */
 
 interface ChannelStats {
   channelId: string;
@@ -67,6 +75,25 @@ function generateMockStats(channelId: string): ChannelStats {
     updatedAt: new Date().toISOString(),
   };
 }
+
+function generateSimilarChannels(channelId: string): SimilarChannel[] {
+  const seed = channelId.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+  const names = [
+    "테크리뷰어", "맛집탐방기", "일상브이로그", "게임마스터",
+    "뮤직스튜디오", "여행의정석",
+  ];
+  const cats = ["technology", "food", "entertainment", "gaming", "music", "travel"];
+  return names.map((name, i) => ({
+    channelId: `similar_${seed}_${i}`,
+    title: name,
+    thumbnailUrl: "",
+    subscriberCount: Math.floor(Math.sin(seed + i * 7) * 500000 + 600000),
+    category: cats[i],
+    similarity: Math.floor(90 - i * 8),
+  }));
+}
+
+/* ---------- Channel Add Dialog (unchanged) ---------- */
 
 interface SearchDialogProps {
   open: boolean;
@@ -214,6 +241,8 @@ function ChannelAddDialog({ open, onOpenChange }: SearchDialogProps) {
   );
 }
 
+/* ---------- Channel Monitor Card ---------- */
+
 interface StatRowProps {
   icon: React.ReactNode;
   label: string;
@@ -254,10 +283,12 @@ function StatRow({ icon, label, value, delta, unit = "" }: StatRowProps) {
 interface ChannelMonitorCardProps {
   channel: TrackedChannel;
   stats: ChannelStats;
+  isSelected: boolean;
+  onSelect: (channelId: string) => void;
   onRemove: (channelId: string) => void;
 }
 
-function ChannelMonitorCard({ channel, stats, onRemove }: ChannelMonitorCardProps) {
+function ChannelMonitorCard({ channel, stats, isSelected, onSelect, onRemove }: ChannelMonitorCardProps) {
   const categoryLabel =
     CATEGORIES.find((c) => c.value === channel.category)?.label ??
     channel.category;
@@ -272,9 +303,14 @@ function ChannelMonitorCard({ channel, stats, onRemove }: ChannelMonitorCardProp
       : "text-red-400";
 
   return (
-    <Card className="relative bg-slate-900 border-slate-800 text-slate-100 overflow-hidden">
+    <Card
+      className={`relative bg-slate-900 border-slate-800 text-slate-100 overflow-hidden cursor-pointer transition-all ${
+        isSelected ? "ring-2 ring-blue-500 border-blue-500/50" : "hover:border-slate-700"
+      }`}
+      onClick={() => onSelect(channel.channelId)}
+    >
       <button
-        onClick={() => onRemove(channel.channelId)}
+        onClick={(e) => { e.stopPropagation(); onRemove(channel.channelId); }}
         className="absolute top-2 right-2 flex items-center justify-center size-6 rounded-md text-slate-500 hover:text-red-400 hover:bg-red-400/10 transition-colors z-10"
         aria-label="채널 제거"
       >
@@ -364,9 +400,27 @@ function ChannelMonitorCard({ channel, stats, onRemove }: ChannelMonitorCardProp
   );
 }
 
+/* ---------- Main Dashboard ---------- */
+
 export function MonitorDashboard() {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const { trackedChannels, removeChannel } = useMonitorStore();
+  const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
+  const {
+    trackedChannels,
+    removeChannel,
+    folders,
+    activeFolderId,
+    setActiveFolder,
+    addFolder,
+    removeFolder,
+    renameFolder,
+    getFilteredChannels,
+    history,
+    updateChannelMemo,
+    addChannel,
+  } = useMonitorStore();
+
+  const filteredChannels = getFilteredChannels();
 
   const statsMap = useMemo(() => {
     const map: Record<string, ChannelStats> = {};
@@ -376,19 +430,69 @@ export function MonitorDashboard() {
     return map;
   }, [trackedChannels]);
 
-  const isEmpty = trackedChannels.length === 0;
+  const summaryData = useMemo(() => {
+    return filteredChannels.map((ch) => {
+      const s = statsMap[ch.channelId];
+      return {
+        subscriberDelta: s?.subscriberDelta ?? 0,
+        viewDelta: s?.viewsDelta ?? 0,
+      };
+    });
+  }, [filteredChannels, statsMap]);
+
+  const selectedChannel = trackedChannels.find(
+    (ch) => ch.channelId === selectedChannelId
+  );
+  const selectedHistory = selectedChannelId ? history[selectedChannelId] ?? [] : [];
+  const selectedVideos = useMemo(
+    () => (selectedChannelId ? generateVideoInsights(selectedChannelId) : []),
+    [selectedChannelId]
+  );
+  const similarChannels = useMemo(
+    () => (selectedChannelId ? generateSimilarChannels(selectedChannelId) : []),
+    [selectedChannelId]
+  );
+
+  const isEmpty = filteredChannels.length === 0;
+
+  function handleSelectChannel(channelId: string) {
+    setSelectedChannelId((prev) => (prev === channelId ? null : channelId));
+  }
+
+  function handleAddSimilar(similar: SimilarChannel) {
+    addChannel({
+      channelId: similar.channelId,
+      title: similar.title,
+      thumbnailUrl: similar.thumbnailUrl,
+      category: similar.category,
+      addedAt: new Date().toISOString(),
+    });
+  }
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Summary Cards */}
+      {trackedChannels.length > 0 && (
+        <MonitorSummaryCards channels={summaryData} />
+      )}
+
       {/* Toolbar */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {trackedChannels.length > 0 && (
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
+          <FolderSelector
+            folders={folders}
+            activeFolderId={activeFolderId}
+            onSelect={setActiveFolder}
+            onAdd={addFolder}
+            onRemove={removeFolder}
+            onRename={renameFolder}
+          />
+          {filteredChannels.length > 0 && (
             <Badge
               variant="secondary"
               className="bg-blue-600/20 text-blue-400 border-blue-500/30"
             >
-              {trackedChannels.length}개 채널 추적 중
+              {filteredChannels.length}개 채널 추적 중
             </Badge>
           )}
         </div>
@@ -427,16 +531,49 @@ export function MonitorDashboard() {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {trackedChannels.map((ch) => (
-            <ChannelMonitorCard
-              key={ch.channelId}
-              channel={ch}
-              stats={statsMap[ch.channelId]}
-              onRemove={removeChannel}
-            />
-          ))}
-        </div>
+        <>
+          {/* Channel Grid */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {filteredChannels.map((ch) => (
+              <ChannelMonitorCard
+                key={ch.channelId}
+                channel={ch}
+                stats={statsMap[ch.channelId]}
+                isSelected={selectedChannelId === ch.channelId}
+                onSelect={handleSelectChannel}
+                onRemove={removeChannel}
+              />
+            ))}
+          </div>
+
+          {/* Channel Detail Panel */}
+          {selectedChannel && (
+            <div className="flex flex-col gap-6">
+              <ChannelDetailPanel
+                channel={selectedChannel}
+                history={selectedHistory}
+                onClose={() => setSelectedChannelId(null)}
+                onMemoChange={updateChannelMemo}
+              />
+
+              {/* Video Insights */}
+              {selectedVideos.length > 0 && (
+                <VideoInsights
+                  videos={selectedVideos}
+                  channelTitle={selectedChannel.title}
+                />
+              )}
+
+              {/* Similar Channels */}
+              {similarChannels.length > 0 && (
+                <SimilarChannels
+                  channels={similarChannels}
+                  onAddToMonitor={handleAddSimilar}
+                />
+              )}
+            </div>
+          )}
+        </>
       )}
 
       <ChannelAddDialog open={dialogOpen} onOpenChange={setDialogOpen} />

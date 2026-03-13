@@ -13,6 +13,7 @@ import {
   Calculator,
   GitCompare,
   FileText,
+  Activity,
   Star,
   Bell,
   LayoutDashboard,
@@ -60,6 +61,7 @@ const menuSections: MenuSection[] = [
       { label: "수익 계산기", href: "/tools/calculator", icon: Calculator },
       { label: "채널 비교", href: "/tools/compare", icon: GitCompare },
       { label: "AI 콘텐츠", href: "/tools/ai-content", icon: FileText },
+      { label: "유튜버 모니터", href: "/tools/youtuber-tracker", icon: Activity },
     ],
   },
   {
