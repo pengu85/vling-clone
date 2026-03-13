@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -159,10 +160,23 @@ export default function YoutuberTrackerPage() {
   const selectedHistory = selectedChannelId
     ? history[selectedChannelId] ?? []
     : [];
-  const selectedVideos = useMemo(
-    () => (selectedChannelId ? generateVideoInsights(selectedChannelId) : []),
-    [selectedChannelId]
-  );
+  const { data: selectedVideos = [] } = useQuery({
+    queryKey: ["monitor-videos", selectedChannelId],
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/monitor/videos?channelId=${selectedChannelId}`
+      );
+      const data = await res.json();
+      return data.length > 0
+        ? data
+        : generateVideoInsights(selectedChannelId!);
+    },
+    enabled: !!selectedChannelId,
+    staleTime: 1000 * 60 * 30, // 30분
+    placeholderData: selectedChannelId
+      ? generateVideoInsights(selectedChannelId)
+      : [],
+  });
   const similarChannels = useMemo(
     () =>
       selectedChannelId ? generateSimilarChannels(selectedChannelId) : [],

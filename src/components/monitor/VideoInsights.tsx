@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Eye, ThumbsUp, TrendingUp, Flame } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatNumber, formatDate, formatGrowthRate } from "@/lib/formatters";
@@ -49,25 +50,54 @@ function VideoCard({
 }) {
   const isShorts = video.type === "shorts";
   const growthPositive = video.viewsGrowth >= 0;
+  const youtubeUrl = isShorts
+    ? `https://www.youtube.com/shorts/${video.id}`
+    : `https://www.youtube.com/watch?v=${video.id}`;
 
   return (
-    <div className="flex gap-3 p-3 rounded-xl bg-slate-800/50 hover:bg-slate-800 transition-colors cursor-pointer group border border-slate-800 hover:border-slate-700">
+    <a
+      href={youtubeUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex gap-3 p-3 rounded-xl bg-slate-800/50 hover:bg-slate-800 transition-colors group border border-slate-800 hover:border-slate-700"
+    >
       {/* Thumbnail */}
       <div
         className={`relative flex-shrink-0 rounded-lg overflow-hidden bg-gradient-to-br ${thumbnailGradient(index)} flex items-center justify-center ${
           isShorts ? "w-[54px] h-[96px]" : "w-[160px] h-[90px]"
         }`}
       >
-        <span className="text-2xl opacity-40">▶</span>
+        {/* Real thumbnail image */}
+        {video.thumbnailUrl && (
+          <Image
+            src={video.thumbnailUrl}
+            alt={video.title}
+            fill
+            className="object-cover"
+            sizes={isShorts ? "54px" : "160px"}
+          />
+        )}
+
+        {/* Play icon overlay on hover (shown when no image or as overlay) */}
+        {!video.thumbnailUrl && (
+          <span className="text-2xl opacity-40">▶</span>
+        )}
+
+        {/* Hover play overlay */}
+        <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors">
+          <span className="text-white text-xl opacity-0 group-hover:opacity-80 transition-opacity drop-shadow">
+            ▶
+          </span>
+        </div>
 
         {/* Duration badge */}
-        <div className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] px-1 py-0.5 rounded font-mono leading-none">
+        <div className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] px-1 py-0.5 rounded font-mono leading-none z-10">
           {video.duration}
         </div>
 
         {/* HOT badge */}
         {isHot && (
-          <div className="absolute top-1 left-1">
+          <div className="absolute top-1 left-1 z-10">
             <span className="flex items-center gap-0.5 bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded leading-none">
               <Flame className="h-2.5 w-2.5" />
               HOT
@@ -78,7 +108,7 @@ function VideoCard({
 
       {/* Info */}
       <div className="flex flex-col justify-between flex-1 min-w-0 py-0.5">
-        <p className="text-sm font-medium text-slate-100 line-clamp-2 leading-snug">
+        <p className="text-sm font-medium text-slate-100 line-clamp-2 leading-snug group-hover:text-blue-300 transition-colors">
           {video.title}
         </p>
 
@@ -104,7 +134,7 @@ function VideoCard({
           </span>
         </div>
       </div>
-    </div>
+    </a>
   );
 }
 
