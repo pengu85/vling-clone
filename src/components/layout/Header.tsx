@@ -1,0 +1,240 @@
+"use client"
+
+import Link from "next/link"
+import { useState } from "react"
+import { Search, Menu, LogOut, User, Moon, Sun } from "lucide-react"
+import { useSession, signOut } from "next-auth/react"
+import { useRouter } from "next/navigation"
+import { useThemeStore } from "@/stores/themeStore"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+
+const navLinks = [
+  { label: "기능", href: "/features" },
+  { label: "블로그", href: "/blog" },
+  { label: "채널", href: "/channels" },
+  { label: "요금안내", href: "/pricing" },
+]
+
+function UserMenu() {
+  const { data: session, status } = useSession()
+
+  if (status === "loading") {
+    return <div className="h-8 w-24 animate-pulse rounded-md bg-slate-800" />
+  }
+
+  if (session?.user) {
+    return (
+      <div className="flex items-center gap-2">
+        {/* Avatar + name */}
+        <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-slate-800 text-slate-200 text-sm">
+          <div className="size-6 rounded-full bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center flex-shrink-0">
+            <User className="size-3.5 text-white" />
+          </div>
+          <span className="max-w-[120px] truncate">{session.user.name ?? session.user.email}</span>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-slate-400 hover:text-white hover:bg-slate-800 gap-1.5"
+          onClick={() => signOut({ callbackUrl: "/" })}
+        >
+          <LogOut className="size-3.5" />
+          로그아웃
+        </Button>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <Link
+        href="/login"
+        className="inline-flex items-center justify-center rounded-lg border border-transparent px-2.5 h-7 text-[0.8rem] font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+      >
+        로그인
+      </Link>
+      <Link
+        href="/signup"
+        className="inline-flex items-center justify-center rounded-lg h-7 px-2.5 text-[0.8rem] font-medium bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-500 hover:to-blue-500 text-white transition-colors"
+      >
+        무료 시작
+      </Link>
+    </>
+  )
+}
+
+function MobileUserMenu() {
+  const { data: session, status } = useSession()
+
+  if (status === "loading") {
+    return <div className="h-9 w-full animate-pulse rounded-md bg-slate-800" />
+  }
+
+  if (session?.user) {
+    return (
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-slate-800 text-slate-200 text-sm">
+          <div className="size-7 rounded-full bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center flex-shrink-0">
+            <User className="size-4 text-white" />
+          </div>
+          <div className="flex flex-col min-w-0">
+            <span className="font-medium truncate">{session.user.name}</span>
+            <span className="text-xs text-slate-400 truncate">{session.user.email}</span>
+          </div>
+        </div>
+        <Button
+          variant="outline"
+          className="border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 w-full gap-2"
+          onClick={() => signOut({ callbackUrl: "/" })}
+        >
+          <LogOut className="size-4" />
+          로그아웃
+        </Button>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <Link
+        href="/login"
+        className="inline-flex items-center justify-center rounded-lg border border-slate-700 w-full py-2 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+      >
+        로그인
+      </Link>
+      <Link
+        href="/signup"
+        className="inline-flex items-center justify-center rounded-lg w-full py-2 text-sm font-medium bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-500 hover:to-blue-500 text-white transition-colors"
+      >
+        무료 시작
+      </Link>
+    </>
+  )
+}
+
+export function Header() {
+  const [searchValue, setSearchValue] = useState("")
+  const router = useRouter()
+  const { theme, toggleTheme } = useThemeStore()
+
+  function handleHeaderSearch() {
+    const q = searchValue.trim()
+    if (q) {
+      router.push(`/search?q=${encodeURIComponent(q)}`)
+      setSearchValue("")
+    }
+  }
+
+  return (
+    <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-slate-900 border-b border-slate-800">
+      <div className="flex h-full items-center px-4 gap-4">
+        {/* 로고 */}
+        <Link href="/" className="flex-shrink-0">
+          <span className="text-xl font-bold bg-gradient-to-r from-violet-400 to-blue-400 bg-clip-text text-transparent">
+            블링
+          </span>
+        </Link>
+
+        {/* 검색바 (데스크탑) */}
+        <form onSubmit={(e) => { e.preventDefault(); handleHeaderSearch() }} className="hidden md:flex flex-1 max-w-md relative mx-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none z-10" />
+          <Input
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            placeholder="채널명, 키워드로 검색..."
+            className="pl-9 bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500 focus-visible:border-violet-500 focus-visible:ring-violet-500/20 h-8 text-sm"
+          />
+        </form>
+
+        {/* 네비게이션 (데스크탑) */}
+        <nav className="hidden lg:flex items-center gap-1">
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="px-3 py-1.5 text-sm text-slate-300 hover:text-white hover:bg-slate-800 rounded-md transition-colors"
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="flex-1" />
+
+        {/* 오른쪽 버튼 (데스크탑) */}
+        <div className="hidden md:flex items-center gap-2">
+          <button
+            onClick={toggleTheme}
+            className="inline-flex items-center justify-center rounded-md h-8 w-8 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            aria-label="테마 변경"
+          >
+            {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+          </button>
+          <UserMenu />
+        </div>
+
+        {/* 모바일 햄버거 */}
+        <div className="md:hidden ml-auto">
+          <Sheet>
+            <SheetTrigger
+              className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+              aria-label="메뉴 열기"
+            >
+              <Menu className="size-5" />
+            </SheetTrigger>
+            <SheetContent
+              side="right"
+              className="bg-slate-900 border-slate-800 w-72 flex flex-col gap-0 p-0"
+            >
+              <SheetHeader className="p-4 pb-2">
+                <SheetTitle className="text-left">
+                  <span className="text-xl font-bold bg-gradient-to-r from-violet-400 to-blue-400 bg-clip-text text-transparent">
+                    블링
+                  </span>
+                </SheetTitle>
+              </SheetHeader>
+
+              {/* 모바일 검색 */}
+              <form onSubmit={(e) => { e.preventDefault(); handleHeaderSearch() }} className="px-4 pb-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none z-10" />
+                  <Input
+                    value={searchValue}
+                    onChange={(e) => setSearchValue(e.target.value)}
+                    placeholder="채널명, 키워드로 검색..."
+                    className="pl-9 bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500 h-9 text-sm"
+                  />
+                </div>
+              </form>
+
+              {/* 모바일 네비게이션 */}
+              <nav className="px-4 flex flex-col gap-1">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-800 rounded-md transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </nav>
+
+              <div className="px-4 pt-4 mt-auto flex flex-col gap-2">
+                <MobileUserMenu />
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
+    </header>
+  )
+}

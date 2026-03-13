@@ -1,0 +1,159 @@
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || "";
+const BASE_URL = "https://www.googleapis.com/youtube/v3";
+
+interface YouTubeChannelResponse {
+  items: Array<{
+    id: string;
+    snippet: {
+      title: string;
+      description: string;
+      thumbnails: { high: { url: string } };
+      country?: string;
+      defaultLanguage?: string;
+    };
+    statistics: {
+      subscriberCount: string;
+      viewCount: string;
+      videoCount: string;
+    };
+    brandingSettings?: {
+      image?: { bannerExternalUrl?: string };
+    };
+  }>;
+  pageInfo: { totalResults: number };
+}
+
+interface YouTubeSearchResponse {
+  items: Array<{
+    id: { channelId?: string; videoId?: string };
+    snippet: {
+      channelId: string;
+      title: string;
+      description: string;
+      thumbnails: { high: { url: string } };
+      publishedAt: string;
+    };
+  }>;
+  pageInfo: { totalResults: number };
+  nextPageToken?: string;
+}
+
+interface YouTubeVideoResponse {
+  items: Array<{
+    id: string;
+    snippet: {
+      title: string;
+      description: string;
+      thumbnails: { high: { url: string } };
+      publishedAt: string;
+      tags?: string[];
+    };
+    statistics: {
+      viewCount: string;
+      likeCount: string;
+      commentCount: string;
+    };
+    contentDetails: {
+      duration: string;
+    };
+  }>;
+}
+
+async function youtubeGet<T>(endpoint: string, params: Record<string, string>): Promise<T> {
+  const searchParams = new URLSearchParams({ ...params, key: YOUTUBE_API_KEY });
+  const res = await fetch(`${BASE_URL}/${endpoint}?${searchParams}`, {
+    next: { revalidate: 3600 },
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(`YouTube API error: ${res.status} - ${JSON.stringify(error)}`);
+  }
+  return res.json();
+}
+
+export interface SearchChannelsOptions {
+  regionCode?: string;
+  order?: "relevance" | "date" | "rating" | "viewCount" | "title";
+  relevanceLanguage?: string;
+}
+
+export const youtubeClient = {
+  async searchChannels(
+    query: string,
+    maxResults = 20,
+    options: SearchChannelsOptions = {}
+  ): Promise<YouTubeSearchResponse> {
+    const params: Record<string, string> = {
+      part: "snippet",
+      q: query,
+      type: "channel",
+      maxResults: String(maxResults),
+    };
+    if (options.regionCode) params.regionCode = options.regionCode;
+    if (options.order) params.order = options.order;
+    if (options.relevanceLanguage) params.relevanceLanguage = options.relevanceLanguage;
+    return youtubeGet<YouTubeSearchResponse>("search", params);
+  },
+
+  async getChannel(channelId: string): Promise<YouTubeChannelResponse> {
+    return youtubeGet<YouTubeChannelResponse>("channels", {
+      part: "snippet,statistics,brandingSettings",
+      id: channelId,
+    });
+  },
+
+  async getChannelVideos(channelId: string, maxResults = 20): Promise<YouTubeSearchResponse> {
+    return youtubeGet<YouTubeSearchResponse>("search", {
+      part: "snippet",
+      channelId,
+      type: "video",
+      order: "date",
+      maxResults: String(maxResults),
+    });
+  },
+
+  async getVideoDetails(videoIds: string[]): Promise<YouTubeVideoResponse> {
+    return youtubeGet<YouTubeVideoResponse>("videos", {
+      part: "snippet,statistics,contentDetails",
+      id: videoIds.join(","),
+    });
+  },
+
+  async searchVideos(query: string, maxResults = 20): Promise<YouTubeSearchResponse> {
+    return youtubeGet<YouTubeSearchResponse>("search", {
+      part: "snippet",
+      q: query,
+      type: "video",
+      order: "viewCount",
+      maxResults: String(maxResults),
+    });
+  },
+
+  async resolveHandle(handle: string): Promise<string | null> {
+    // Try forHandle param first (works for @handle format)
+    const cleanHandle = handle.startsWith("@") ? handle.slice(1) : handle;
+    try {
+      const result = await youtubeGet<YouTubeChannelResponse>("channels", {
+        part: "id",
+        forHandle: cleanHandle,
+      });
+      if (result.items && result.items.length > 0) {
+        return result.items[0].id;
+      }
+    } catch {
+      // forHandle may not work for /c/ custom URLs, fall through to search
+    }
+
+    // Fallback: search by name
+    const searchResult = await youtubeGet<YouTubeSearchResponse>("search", {
+      part: "snippet",
+      q: handle,
+      type: "channel",
+      maxResults: "1",
+    });
+    if (searchResult.items && searchResult.items.length > 0) {
+      return searchResult.items[0].id.channelId ?? null;
+    }
+    return null;
+  },
+};
