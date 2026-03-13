@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Calculator, Sparkles, GitCompare, Info } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { RevenueCalculator } from "@/components/tools/RevenueCalculator";
+
+export const metadata: Metadata = {
+  title: "수익 계산기",
+  description: "유튜브 채널의 예상 광고 수익을 계산하고 분석하세요.",
+};
 
 export default function CalculatorPage() {
   return (

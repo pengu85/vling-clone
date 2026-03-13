@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { FileText, Sparkles, Calculator } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { AIContentMaker } from "@/components/tools/AIContentMaker";
+
+export const metadata: Metadata = {
+  title: "AI 콘텐츠",
+  description: "AI로 유튜브 콘텐츠 아이디어와 스크립트를 생성하세요.",
+};
 
 export default function AIContentPage() {
   return (

@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import { Sparkles, Info } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { AIFinderForm } from "@/components/tools/AIFinderForm";
+
+export const metadata: Metadata = {
+  title: "AI 파인더",
+  description: "AI가 마케팅 목적에 맞는 최적의 유튜버를 추천해드립니다.",
+};
 
 export default function AIFinderPage() {
   return (

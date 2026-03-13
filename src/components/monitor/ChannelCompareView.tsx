@@ -109,11 +109,13 @@ export function ChannelCompareView({ channels }: ChannelCompareViewProps) {
 
   return (
     <div className="rounded-xl bg-slate-800/40 border border-slate-700/50 overflow-hidden">
+      <div className="overflow-x-auto">
       {/* Table header — channel avatars */}
       <div
         className="grid border-b border-slate-700/50"
         style={{
-          gridTemplateColumns: `160px repeat(${visible.length}, 1fr)`,
+          gridTemplateColumns: `140px repeat(${visible.length}, minmax(120px, 1fr))`,
+          minWidth: `${140 + visible.length * 120}px`,
         }}
       >
         {/* Empty corner */}
@@ -156,7 +158,8 @@ export function ChannelCompareView({ channels }: ChannelCompareViewProps) {
             key={metric.key}
             className="grid border-b border-slate-700/30 last:border-b-0"
             style={{
-              gridTemplateColumns: `160px repeat(${visible.length}, 1fr)`,
+              gridTemplateColumns: `140px repeat(${visible.length}, minmax(120px, 1fr))`,
+              minWidth: `${140 + visible.length * 120}px`,
             }}
           >
             {/* Label */}
@@ -206,6 +209,7 @@ export function ChannelCompareView({ channels }: ChannelCompareViewProps) {
           </div>
         );
       })}
+      </div>
     </div>
   );
 }

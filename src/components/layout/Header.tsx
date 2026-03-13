@@ -125,6 +125,7 @@ function MobileUserMenu() {
 
 export function Header() {
   const [searchValue, setSearchValue] = useState("")
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const router = useRouter()
   const { theme, toggleTheme } = useThemeStore()
 
@@ -163,6 +164,7 @@ export function Header() {
       clearSuggestions()
       router.push(`/search?q=${encodeURIComponent(q)}`)
       setSearchValue("")
+      setMobileSearchOpen(false)
     }
   }
 
@@ -193,8 +195,8 @@ export function Header() {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-slate-900 border-b border-slate-800">
-      <div className="flex h-full items-center px-4 gap-4">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900 border-b border-slate-800">
+      <div className="flex h-14 items-center px-4 gap-4">
         {/* 로고 */}
         <Link href="/" className="flex-shrink-0">
           <span className="text-xl font-bold bg-gradient-to-r from-violet-400 to-blue-400 bg-clip-text text-transparent">
@@ -256,8 +258,17 @@ export function Header() {
           <UserMenu />
         </div>
 
+        {/* 모바일 검색 아이콘 */}
+        <button
+          className="md:hidden ml-auto inline-flex items-center justify-center rounded-lg p-1.5 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+          aria-label="검색"
+          onClick={() => setMobileSearchOpen((v) => !v)}
+        >
+          <Search className="size-5" />
+        </button>
+
         {/* 모바일 햄버거 */}
-        <div className="md:hidden ml-auto">
+        <div className="md:hidden">
           <Sheet>
             <SheetTrigger
               className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
@@ -323,6 +334,35 @@ export function Header() {
           </Sheet>
         </div>
       </div>
+
+      {/* 모바일 검색 오버레이 */}
+      {mobileSearchOpen && (
+        <div ref={mobileSearchRef} className="md:hidden border-t border-slate-800 bg-slate-900 px-4 py-2 relative">
+          <form onSubmit={(e) => { e.preventDefault(); handleHeaderSearch() }}>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none z-10" />
+              <Input
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onFocus={() => { if (suggestions.length > 0) setIsOpen(true) }}
+                placeholder="채널명, 키워드로 검색..."
+                className="pl-9 bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500 focus-visible:border-violet-500 focus-visible:ring-violet-500/20 h-9 text-sm"
+                autoComplete="off"
+                autoFocus
+              />
+            </div>
+          </form>
+          {isOpen && (
+            <AutocompleteDropdown
+              suggestions={suggestions}
+              activeIndex={activeIndex}
+              onSelect={handleSelectChannel}
+              onMouseEnter={setActiveIndex}
+            />
+          )}
+        </div>
+      )}
     </header>
   )
 }

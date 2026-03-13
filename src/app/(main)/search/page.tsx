@@ -82,7 +82,7 @@ export default function SearchPage() {
   return (
     <div className="space-y-4">
       {/* 검색바 */}
-      <div className="max-w-2xl">
+      <div className="w-full max-w-2xl">
         <SearchBar onSearch={handleSearch} defaultValue={filters.q ?? ""} />
       </div>
 
@@ -93,7 +93,7 @@ export default function SearchPage() {
       <SearchFilters filters={filters} onFilterChange={handleFilterChange} />
 
       {/* 결과 헤더 */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-3">
           {isLoading ? (
             <p className="text-sm text-slate-400">검색 중...</p>

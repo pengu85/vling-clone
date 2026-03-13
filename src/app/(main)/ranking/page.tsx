@@ -72,14 +72,14 @@ export default function RankingPage() {
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* 헤더 */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-100">유튜브 순위</h1>
+          <h1 className="text-xl font-bold text-slate-100 sm:text-2xl">유튜브 순위</h1>
           <p className="mt-1 text-sm text-slate-500">
             카테고리별, 지표별 채널 순위를 확인하세요.
           </p>
         </div>
 
         {/* 순위 유형 탭 */}
-        <div className="mb-4 flex flex-wrap gap-1.5">
+        <div className="mb-4 grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap">
           {RANK_TABS.map(({ value, label, icon: Icon }) => (
             <Button
               key={value}
@@ -87,7 +87,7 @@ export default function RankingPage() {
               size="sm"
               onClick={() => handleTypeChange(value)}
               className={cn(
-                "h-8 gap-1.5 rounded-lg px-3 text-sm font-medium transition-colors",
+                "h-8 gap-1 rounded-lg px-2 text-xs font-medium transition-colors sm:gap-1.5 sm:px-3 sm:text-sm",
                 rankType === value
                   ? "bg-blue-600 text-white hover:bg-blue-500"
                   : "bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200"
@@ -102,7 +102,7 @@ export default function RankingPage() {
         {/* 필터 바 */}
         <div className="mb-5 flex flex-wrap items-center gap-2">
           <Select value={category} onValueChange={handleCategoryChange}>
-            <SelectTrigger className="h-8 w-36 border-slate-700 bg-slate-800 text-slate-300 text-xs">
+            <SelectTrigger className="h-8 w-full max-w-[144px] border-slate-700 bg-slate-800 text-slate-300 text-xs sm:w-36">
               <SelectValue placeholder="카테고리" />
             </SelectTrigger>
             <SelectContent>
