@@ -24,6 +24,11 @@ interface StatsChartProps {
   color?: string;
 }
 
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+
 function generateMockTrend(days: number, baseValue: number): DataPoint[] {
   const points: DataPoint[] = [];
   let current = baseValue;
@@ -31,7 +36,8 @@ function generateMockTrend(days: number, baseValue: number): DataPoint[] {
   for (let i = days - 1; i >= 0; i--) {
     const date = new Date(now);
     date.setDate(date.getDate() - i);
-    const change = (Math.random() - 0.45) * current * 0.03;
+    const seed = baseValue + i * 31;
+    const change = (seededRandom(seed) - 0.45) * current * 0.03;
     current = Math.max(0, current + change);
     points.push({
       date: `${date.getMonth() + 1}/${date.getDate()}`,
@@ -65,10 +71,10 @@ export function StatsChart({ data, title, color = "#6366f1" }: StatsChartProps) 
   }, [data, period]);
 
   return (
-    <Card className="bg-white border-slate-200">
+    <Card className="bg-slate-900 border-slate-800">
       <CardHeader className="pb-2 px-3 sm:px-6">
         <div className="flex items-center justify-between gap-2">
-          <CardTitle className="text-sm font-medium text-slate-700 truncate">{title}</CardTitle>
+          <CardTitle className="text-sm font-medium text-slate-300 truncate">{title}</CardTitle>
           <div className="flex gap-1 shrink-0">
             {PERIOD_OPTIONS.map((opt) => (
               <Button
@@ -78,7 +84,7 @@ export function StatsChart({ data, title, color = "#6366f1" }: StatsChartProps) 
                 className={
                   period === opt.value
                     ? "h-6 px-1.5 sm:px-2 text-xs bg-indigo-600 hover:bg-indigo-500 text-white border-none"
-                    : "h-6 px-1.5 sm:px-2 text-xs text-slate-500 hover:text-slate-700"
+                    : "h-6 px-1.5 sm:px-2 text-xs text-slate-500 hover:text-slate-300"
                 }
                 onClick={() => setPeriod(opt.value)}
               >
@@ -94,7 +100,7 @@ export function StatsChart({ data, title, color = "#6366f1" }: StatsChartProps) 
             data={chartData}
             margin={{ top: 4, right: 4, bottom: 0, left: -8 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
             <XAxis
               dataKey="date"
               tick={{ fontSize: 9, fill: "#94a3b8" }}
@@ -113,8 +119,10 @@ export function StatsChart({ data, title, color = "#6366f1" }: StatsChartProps) 
               contentStyle={{
                 fontSize: 12,
                 borderRadius: 8,
-                border: "1px solid #e2e8f0",
-                boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
+                border: "1px solid #334155",
+                backgroundColor: "#1e293b",
+                color: "#e2e8f0",
+                boxShadow: "0 4px 6px -1px rgba(0,0,0,0.4)",
               }}
               formatter={(value) => [formatYAxis(Number(value ?? 0)), title]}
             />

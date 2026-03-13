@@ -43,13 +43,13 @@ interface StatCardProps {
 
 function StatCard({ icon, label, value }: StatCardProps) {
   return (
-    <Card className="bg-white border-slate-200 flex-1 min-w-0">
+    <Card className="bg-slate-800 border-slate-700 flex-1 min-w-0">
       <CardContent className="py-3 px-4">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-indigo-500">{icon}</span>
+          <span className="text-indigo-400">{icon}</span>
           <span className="text-xs text-slate-500">{label}</span>
         </div>
-        <p className="text-lg font-bold text-slate-900 truncate">{value}</p>
+        <p className="text-lg font-bold text-slate-100 truncate">{value}</p>
       </CardContent>
     </Card>
   );
@@ -59,7 +59,7 @@ export function ChannelProfile({ channel }: ChannelProfileProps) {
   const [favorited, setFavorited] = useState(false);
 
   return (
-    <div className="bg-white border-b border-slate-200">
+    <div className="bg-slate-900 border-b border-slate-800">
       {/* 배너 */}
       <div className="relative w-full h-48 bg-gradient-to-r from-indigo-600 to-violet-600 overflow-hidden">
         {channel.bannerUrl && (
@@ -78,7 +78,7 @@ export function ChannelProfile({ channel }: ChannelProfileProps) {
         <div className="relative pb-4">
           {/* 프로필 이미지 - 배너에 겹치게 */}
           <div className="absolute -top-12 left-0">
-            <div className="w-24 h-24 rounded-full border-4 border-white overflow-hidden bg-indigo-100 shadow-lg relative">
+            <div className="w-24 h-24 rounded-full border-4 border-slate-900 overflow-hidden bg-indigo-900 shadow-lg relative">
               {channel.thumbnailUrl ? (
                 <Image
                   src={channel.thumbnailUrl}
@@ -100,7 +100,7 @@ export function ChannelProfile({ channel }: ChannelProfileProps) {
             <Button
               variant="outline"
               size="sm"
-              className={`border-slate-200 gap-1.5 ${favorited ? "text-yellow-500 border-yellow-300 bg-yellow-50" : "text-slate-600"}`}
+              className={`border-slate-700 gap-1.5 ${favorited ? "text-yellow-400 border-yellow-600 bg-yellow-900/20" : "text-slate-400"}`}
               onClick={() => setFavorited((v) => !v)}
             >
               <Star className={`h-4 w-4 ${favorited ? "fill-yellow-400" : ""}`} />
@@ -118,7 +118,7 @@ export function ChannelProfile({ channel }: ChannelProfileProps) {
           {/* 채널명 & 메타 */}
           <div className="mt-2 ml-0 pt-10">
             <div className="flex flex-wrap items-center gap-2 mb-1">
-              <h1 className="text-xl font-bold text-slate-900">{channel.title}</h1>
+              <h1 className="text-xl font-bold text-slate-100">{channel.title}</h1>
               <Badge variant="secondary" className="text-xs">
                 {CATEGORY_LABELS[channel.category] ?? channel.category}
               </Badge>

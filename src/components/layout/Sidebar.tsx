@@ -70,6 +70,7 @@ const menuSections: MenuSection[] = [
       { label: "대시보드", href: "/my/dashboard", icon: LayoutDashboard },
       { label: "즐겨찾기 관리", href: "/my/favorites", icon: Star },
       { label: "알림", href: "/my/alerts", icon: Bell },
+      { label: "내 채널 리포트", href: "/my/channel-report", icon: FileText },
     ],
   },
 ]

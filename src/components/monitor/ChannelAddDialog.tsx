@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { Search, Plus, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -108,9 +109,11 @@ export function ChannelAddDialog({ open, onOpenChange }: ChannelAddDialogProps) 
                   className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-slate-800 transition-colors"
                 >
                   <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-slate-700">
-                    <img
+                    <Image
                       src={ch.thumbnailUrl}
                       alt={ch.title}
+                      width={36}
+                      height={36}
                       className="h-full w-full object-cover"
                     />
                   </div>

@@ -30,6 +30,8 @@ export default function SearchPage() {
     limit: LIMIT,
   });
 
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
   const { data, isLoading, isFetching } = useChannelSearch(filters);
   const addQuery = useSearchHistoryStore((s) => s.addQuery);
 
@@ -37,6 +39,29 @@ export default function SearchPage() {
   const total = data?.pagination?.total ?? 0;
   const totalPages = data?.pagination?.totalPages ?? 1;
   const currentPage = filters.page ?? 1;
+
+  const pageChannelIds = channels.map((ch) => ch.id);
+  const allPageSelected =
+    pageChannelIds.length > 0 && pageChannelIds.every((id) => selectedIds.has(id));
+  const somePageSelected = pageChannelIds.some((id) => selectedIds.has(id));
+
+  function handleSelectAll() {
+    if (allPageSelected) {
+      // 현재 페이지 전체 해제
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        pageChannelIds.forEach((id) => next.delete(id));
+        return next;
+      });
+    } else {
+      // 현재 페이지 전체 선택
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        pageChannelIds.forEach((id) => next.add(id));
+        return next;
+      });
+    }
+  }
 
   function handleSearch(q: string) {
     setFilters((prev) => ({ ...prev, q, page: 1 }));
@@ -49,7 +74,12 @@ export default function SearchPage() {
 
   function handleExportCSV() {
     if (channels.length === 0) return;
-    const csv = channelsToCSV(channels);
+    // 선택된 채널이 있으면 선택 항목만, 없으면 전체 내보내기
+    const targets =
+      selectedIds.size > 0
+        ? channels.filter((ch) => selectedIds.has(ch.id))
+        : channels;
+    const csv = channelsToCSV(targets);
     const filename = `블링_검색결과_${new Date().toISOString().split("T")[0]}.csv`;
     downloadCSV(csv, filename);
   }
@@ -119,14 +149,22 @@ export default function SearchPage() {
             CSV
           </Button>
           <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer select-none">
-            <input type="checkbox" className="h-3.5 w-3.5 accent-violet-500" />
-            전체 선택
+            <input
+              type="checkbox"
+              className="h-3.5 w-3.5 accent-violet-500"
+              checked={allPageSelected}
+              ref={(el) => {
+                if (el) el.indeterminate = !allPageSelected && somePageSelected;
+              }}
+              onChange={handleSelectAll}
+            />
+            {selectedIds.size > 0 ? `${selectedIds.size}개 선택됨` : "전체 선택"}
           </label>
         </div>
       </div>
 
       {/* 테이블 헤더 */}
-      <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900">
+      <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900" role="region" aria-label="검색 결과">
         {/* 헤더 행 */}
         <div className="grid grid-cols-[48px_minmax(200px,1fr)_120px_100px_120px_120px_minmax(160px,1fr)_40px] items-center gap-3 border-b border-slate-800 px-4 py-2.5 min-w-[960px] bg-slate-800/50">
           <div className="text-center text-[10px] font-semibold uppercase tracking-wider text-slate-500">

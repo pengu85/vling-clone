@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { ThumbsUp, Eye, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatNumber, formatDate } from "@/lib/formatters";
@@ -25,19 +26,20 @@ interface VideoCardProps {
 
 function VideoCard({ video }: VideoCardProps) {
   return (
-    <div className="group bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-md hover:shadow-indigo-100 transition-shadow cursor-pointer">
+    <div className="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden hover:shadow-md hover:shadow-indigo-900/40 transition-shadow cursor-pointer">
       {/* 썸네일 */}
-      <div className="relative aspect-video bg-slate-100 overflow-hidden">
+      <div className="relative aspect-video bg-slate-700 overflow-hidden">
         {video.thumbnailUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={video.thumbnailUrl}
             alt={video.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-100 to-violet-100">
-            <span className="text-3xl text-indigo-300">▶</span>
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-900 to-violet-900">
+            <span className="text-3xl text-indigo-400">▶</span>
           </div>
         )}
         {/* 재생 시간 */}
@@ -56,7 +58,7 @@ function VideoCard({ video }: VideoCardProps) {
 
       {/* 정보 */}
       <div className="p-3">
-        <p className="text-sm font-medium text-slate-900 line-clamp-2 leading-snug mb-2">
+        <p className="text-sm font-medium text-slate-100 line-clamp-2 leading-snug mb-2">
           {video.title}
         </p>
         <div className="flex items-center gap-3 text-xs text-slate-500">

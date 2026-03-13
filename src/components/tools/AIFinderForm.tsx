@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Loader2, Sparkles, Target, Users, TrendingUp } from "lucide-react";
 import {
   Card,
@@ -325,10 +326,11 @@ export function AIFinderForm() {
                     {/* 채널 썸네일 */}
                     <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-slate-800">
                       {rec.channel.thumbnailUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
+                        <Image
                           src={rec.channel.thumbnailUrl}
                           alt={rec.channel.title}
+                          width={48}
+                          height={48}
                           className="h-full w-full object-cover"
                         />
                       ) : (

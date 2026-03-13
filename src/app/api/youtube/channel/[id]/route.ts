@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { youtubeClient } from "@/lib/youtube";
 import { calculateAlgoScore } from "@/domain/algoScore";
 import { estimateMonthlyRevenue, estimateAdPrice } from "@/domain/revenueEstimate";
+import { deterministicGrowthRate } from "@/lib/utils";
 import type { Channel } from "@/types";
 
 export async function GET(
@@ -61,7 +62,7 @@ export async function GET(
       category: "entertainment",
       country: ch.snippet.country || "KR",
       language: ch.snippet.defaultLanguage || "ko",
-      growthRate30d: parseFloat((Math.random() * 5 - 1).toFixed(1)),
+      growthRate30d: deterministicGrowthRate(ch.id),
       dailyAvgViews,
       algoScore,
       engagementRate,

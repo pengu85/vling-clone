@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import Image from "next/image";
 import {
   TrendingUp,
   TrendingDown,
@@ -187,9 +188,11 @@ function ChannelAddDialog({ open, onOpenChange }: SearchDialogProps) {
                   className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-slate-800 transition-colors"
                 >
                   <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-slate-700">
-                    <img
+                    <Image
                       src={ch.thumbnailUrl}
                       alt={ch.title}
+                      width={36}
+                      height={36}
                       className="h-full w-full object-cover"
                     />
                   </div>
@@ -320,9 +323,11 @@ function ChannelMonitorCard({ channel, stats, isSelected, onSelect, onRemove }: 
       <CardHeader className="pb-3 pr-8">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-slate-700 ring-2 ring-slate-700">
-            <img
+            <Image
               src={channel.thumbnailUrl}
               alt={channel.title}
+              width={40}
+              height={40}
               className="h-full w-full object-cover"
             />
           </div>

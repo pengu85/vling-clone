@@ -5,6 +5,7 @@ import type { ChannelSearchResult, ChannelRanking, ApiResponse } from "@/types";
 interface RankingFilters {
   type?: string;
   category?: string;
+  period?: string;
   page?: number;
   limit?: number;
 }
@@ -15,6 +16,7 @@ async function fetchRankings(filters: RankingFilters): Promise<ApiResponse<Ranki
   const params = new URLSearchParams();
   if (filters.type) params.set("type", filters.type);
   if (filters.category && filters.category !== "all") params.set("category", filters.category);
+  if (filters.period) params.set("period", filters.period);
   if (filters.page) params.set("page", String(filters.page));
   if (filters.limit) params.set("limit", String(filters.limit));
   const res = await fetch(`/api/ranking?${params}`);

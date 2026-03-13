@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Activity,
   Bell,
@@ -390,9 +391,11 @@ export default function YoutuberTrackerPage() {
                       {/* Thumbnail */}
                       <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-slate-700">
                         {ch.thumbnailUrl ? (
-                          <img
+                          <Image
                             src={ch.thumbnailUrl}
                             alt={ch.title}
+                            width={32}
+                            height={32}
                             className="h-full w-full object-cover"
                           />
                         ) : (
@@ -512,9 +515,11 @@ export default function YoutuberTrackerPage() {
                         {/* Large thumbnail */}
                         <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full bg-slate-700 ring-2 ring-slate-700">
                           {selectedChannel.thumbnailUrl ? (
-                            <img
+                            <Image
                               src={selectedChannel.thumbnailUrl}
                               alt={selectedChannel.title}
+                              width={56}
+                              height={56}
                               className="h-full w-full object-cover"
                             />
                           ) : (

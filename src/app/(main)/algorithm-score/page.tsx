@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import Image from "next/image";
 import { TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -83,9 +84,11 @@ function ChannelTableRow({
       <div className="flex items-center gap-3 min-w-0">
         <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-slate-700">
           {channel.thumbnailUrl ? (
-            <img
+            <Image
               src={channel.thumbnailUrl}
               alt={channel.title}
+              width={36}
+              height={36}
               className="h-full w-full object-cover"
             />
           ) : (
@@ -248,7 +251,7 @@ export default function AlgorithmScorePage() {
       </div>
 
       {/* 테이블 헤더 */}
-      <Card className="bg-slate-900 border-slate-800 overflow-hidden">
+      <Card className="bg-slate-900 border-slate-800 overflow-hidden" role="region" aria-label="알고리즘 스코어 결과">
         {/* 헤더 행 */}
         <div className="grid grid-cols-[40px_minmax(180px,1fr)_80px_100px_110px_130px_minmax(120px,1fr)] gap-3 px-4 py-2.5 border-b border-slate-800 bg-slate-800/50 min-w-[900px]">
           <div className="text-center text-[10px] font-semibold uppercase tracking-wider text-slate-500">

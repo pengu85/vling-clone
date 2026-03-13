@@ -48,6 +48,15 @@ const DEFAULT_COUNTRIES = [
   { country: "TW", ratio: 3 },
 ];
 
+const DARK_TOOLTIP_STYLE = {
+  fontSize: 12,
+  borderRadius: 8,
+  border: "1px solid #334155",
+  backgroundColor: "#1e293b",
+  color: "#e2e8f0",
+  boxShadow: "0 4px 6px -1px rgba(0,0,0,0.4)",
+};
+
 export function AudienceChart({
   audienceMaleRatio = 58,
   audienceAgeDistribution = DEFAULT_AGE,
@@ -73,9 +82,9 @@ export function AudienceChart({
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
       {/* 성별 비율 */}
-      <Card className="bg-white border-slate-200">
+      <Card className="bg-slate-900 border-slate-800">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-slate-700">성별 비율</CardTitle>
+          <CardTitle className="text-sm font-medium text-slate-300">성별 비율</CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
           <ResponsiveContainer width="100%" height={180}>
@@ -84,7 +93,7 @@ export function AudienceChart({
               layout="vertical"
               margin={{ top: 4, right: 24, bottom: 0, left: 0 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
               <XAxis
                 type="number"
                 domain={[0, 100]}
@@ -96,14 +105,14 @@ export function AudienceChart({
               <YAxis
                 dataKey="label"
                 type="category"
-                tick={{ fontSize: 12, fill: "#475569" }}
+                tick={{ fontSize: 12, fill: "#94a3b8" }}
                 tickLine={false}
                 axisLine={false}
                 width={36}
               />
               <Tooltip
                 formatter={(value) => [`${Number(value ?? 0)}%`, ""]}
-                contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e8f0" }}
+                contentStyle={DARK_TOOLTIP_STYLE}
               />
               <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={24}>
                 {genderData.map((entry, i) => (
@@ -116,14 +125,14 @@ export function AudienceChart({
       </Card>
 
       {/* 연령 분포 */}
-      <Card className="bg-white border-slate-200">
+      <Card className="bg-slate-900 border-slate-800">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-slate-700">연령 분포</CardTitle>
+          <CardTitle className="text-sm font-medium text-slate-300">연령 분포</CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={ageData} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
               <XAxis
                 dataKey="age"
                 tick={{ fontSize: 9, fill: "#94a3b8" }}
@@ -138,7 +147,7 @@ export function AudienceChart({
               />
               <Tooltip
                 formatter={(value) => [`${Number(value ?? 0)}%`, "비율"]}
-                contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e8f0" }}
+                contentStyle={DARK_TOOLTIP_STYLE}
               />
               <Bar dataKey="ratio" fill="#7c3aed" radius={[4, 4, 0, 0]} />
             </BarChart>
@@ -147,9 +156,9 @@ export function AudienceChart({
       </Card>
 
       {/* 국가별 시청자 */}
-      <Card className="bg-white border-slate-200">
+      <Card className="bg-slate-900 border-slate-800">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-slate-700">국가별 시청자</CardTitle>
+          <CardTitle className="text-sm font-medium text-slate-300">국가별 시청자</CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
           <ResponsiveContainer width="100%" height={180}>
@@ -158,7 +167,7 @@ export function AudienceChart({
               layout="vertical"
               margin={{ top: 4, right: 24, bottom: 0, left: 0 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
               <XAxis
                 type="number"
                 domain={[0, 100]}
@@ -170,14 +179,14 @@ export function AudienceChart({
               <YAxis
                 dataKey="country"
                 type="category"
-                tick={{ fontSize: 11, fill: "#475569" }}
+                tick={{ fontSize: 11, fill: "#94a3b8" }}
                 tickLine={false}
                 axisLine={false}
                 width={36}
               />
               <Tooltip
                 formatter={(value) => [`${Number(value ?? 0)}%`, "비율"]}
-                contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e8f0" }}
+                contentStyle={DARK_TOOLTIP_STYLE}
               />
               <Bar dataKey="ratio" fill="#4f46e5" radius={[0, 4, 4, 0]} barSize={18} />
             </BarChart>

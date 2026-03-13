@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { youtubeClient } from "@/lib/youtube";
 import { calculateAlgoScore } from "@/domain/algoScore";
 import { estimateMonthlyRevenue } from "@/domain/revenueEstimate";
+import { deterministicGrowthRate } from "@/lib/utils";
 import type { ChannelSearchResult } from "@/types";
 
 export async function GET(request: NextRequest) {
@@ -67,7 +68,7 @@ export async function GET(request: NextRequest) {
         thumbnailUrl: ch.snippet.thumbnails.high.url,
         subscriberCount,
         dailyAvgViews,
-        growthRate30d: parseFloat((Math.random() * 5 - 1).toFixed(1)),
+        growthRate30d: deterministicGrowthRate(ch.id),
         algoScore,
         estimatedRevenue,
         category: "entertainment",

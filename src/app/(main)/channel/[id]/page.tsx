@@ -30,12 +30,12 @@ interface MetricCardProps {
 
 function MetricCard({ icon, label, value, sub, color = "text-indigo-500" }: MetricCardProps) {
   return (
-    <Card className="bg-white border-slate-200">
+    <Card className="bg-slate-800 border-slate-700">
       <CardContent className="pt-4 pb-4">
         <div className="flex items-start justify-between">
           <div>
             <p className="text-xs text-slate-500 mb-1">{label}</p>
-            <p className="text-2xl font-bold text-slate-900">{value}</p>
+            <p className="text-2xl font-bold text-slate-100">{value}</p>
             {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
           </div>
           <span className={`${color} mt-0.5`}>{icon}</span>
@@ -48,17 +48,17 @@ function MetricCard({ icon, label, value, sub, color = "text-indigo-500" }: Metr
 function ChannelDetailSkeleton() {
   return (
     <div className="animate-pulse">
-      <div className="h-48 bg-slate-200" />
+      <div className="h-48 bg-slate-800" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
-        <div className="h-8 w-48 bg-slate-200 rounded" />
+        <div className="h-8 w-48 bg-slate-800 rounded" />
         <div className="grid grid-cols-4 gap-3">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-20 bg-slate-200 rounded-xl" />
+            <div key={i} className="h-20 bg-slate-800 rounded-xl" />
           ))}
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <div className="h-52 bg-slate-200 rounded-xl" />
-          <div className="h-52 bg-slate-200 rounded-xl" />
+          <div className="h-52 bg-slate-800 rounded-xl" />
+          <div className="h-52 bg-slate-800 rounded-xl" />
         </div>
       </div>
     </div>
@@ -108,12 +108,12 @@ export default function ChannelDetailPage({ params }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-950">
       <ChannelProfile channel={channel} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Tabs defaultValue="overview">
-          <TabsList className="mb-6 bg-white border border-slate-200 rounded-xl p-1 h-auto w-auto gap-0.5">
+          <TabsList className="mb-6 bg-slate-900 border border-slate-800 rounded-xl p-1 h-auto w-auto gap-0.5">
             <TabsTrigger value="overview" className="text-sm px-4 py-2 rounded-lg">
               개요
             </TabsTrigger>
@@ -183,9 +183,9 @@ export default function ChannelDetailPage({ params }: Props) {
               <GrowthChart title="성장률 추이 (30일)" data={allGrowthTrend} />
 
               {/* 최근 영상 */}
-              <Card className="bg-white border-slate-200">
+              <Card className="bg-slate-900 border-slate-800">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base font-semibold text-slate-800">
+                  <CardTitle className="text-base font-semibold text-slate-200">
                     최근 영상
                   </CardTitle>
                 </CardHeader>
@@ -193,7 +193,7 @@ export default function ChannelDetailPage({ params }: Props) {
                   {videosLoading ? (
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                       {[...Array(4)].map((_, i) => (
-                        <div key={i} className="h-48 bg-slate-100 rounded-xl animate-pulse" />
+                        <div key={i} className="h-48 bg-slate-800 rounded-xl animate-pulse" />
                       ))}
                     </div>
                   ) : (
@@ -208,9 +208,9 @@ export default function ChannelDetailPage({ params }: Props) {
           <TabsContent value="videos">
             <div className="space-y-6">
               {/* 인기 영상 TOP 10 */}
-              <Card className="bg-white border-slate-200">
+              <Card className="bg-slate-900 border-slate-800">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base font-semibold text-slate-800">
+                  <CardTitle className="text-base font-semibold text-slate-200">
                     인기 영상 TOP 10
                   </CardTitle>
                 </CardHeader>
@@ -218,7 +218,7 @@ export default function ChannelDetailPage({ params }: Props) {
                   {videosLoading ? (
                     <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                       {[...Array(5)].map((_, i) => (
-                        <div key={i} className="h-48 bg-slate-100 rounded-xl animate-pulse" />
+                        <div key={i} className="h-48 bg-slate-800 rounded-xl animate-pulse" />
                       ))}
                     </div>
                   ) : (
@@ -230,19 +230,19 @@ export default function ChannelDetailPage({ params }: Props) {
               </Card>
 
               {/* 업로드 빈도 분석 */}
-              <Card className="bg-white border-slate-200">
+              <Card className="bg-slate-900 border-slate-800">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base font-semibold text-slate-800">
+                  <CardTitle className="text-base font-semibold text-slate-200">
                     업로드 패턴 분석
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="rounded-xl bg-slate-50 border border-slate-100 p-4 text-center">
+                    <div className="rounded-xl bg-slate-800 border border-slate-700 p-4 text-center">
                       <p className="text-2xl font-bold text-indigo-600">{formatNumber(channel.videoCount)}</p>
                       <p className="text-xs text-slate-500 mt-1">총 영상 수</p>
                     </div>
-                    <div className="rounded-xl bg-slate-50 border border-slate-100 p-4 text-center">
+                    <div className="rounded-xl bg-slate-800 border border-slate-700 p-4 text-center">
                       <p className="text-2xl font-bold text-violet-600">
                         {videos.length > 1
                           ? (() => {
@@ -257,7 +257,7 @@ export default function ChannelDetailPage({ params }: Props) {
                       </p>
                       <p className="text-xs text-slate-500 mt-1">평균 업로드 주기</p>
                     </div>
-                    <div className="rounded-xl bg-slate-50 border border-slate-100 p-4 text-center">
+                    <div className="rounded-xl bg-slate-800 border border-slate-700 p-4 text-center">
                       <p className="text-2xl font-bold text-emerald-600">
                         {videos.length > 0
                           ? formatNumber(
@@ -267,7 +267,7 @@ export default function ChannelDetailPage({ params }: Props) {
                       </p>
                       <p className="text-xs text-slate-500 mt-1">평균 조회수</p>
                     </div>
-                    <div className="rounded-xl bg-slate-50 border border-slate-100 p-4 text-center">
+                    <div className="rounded-xl bg-slate-800 border border-slate-700 p-4 text-center">
                       <p className="text-2xl font-bold text-amber-600">
                         {videos.length > 0
                           ? formatNumber(
@@ -282,9 +282,9 @@ export default function ChannelDetailPage({ params }: Props) {
               </Card>
 
               {/* 전체 영상 */}
-              <Card className="bg-white border-slate-200">
+              <Card className="bg-slate-900 border-slate-800">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base font-semibold text-slate-800">
+                  <CardTitle className="text-base font-semibold text-slate-200">
                     전체 영상 ({formatNumber(channel.videoCount)})
                   </CardTitle>
                 </CardHeader>
@@ -292,7 +292,7 @@ export default function ChannelDetailPage({ params }: Props) {
                   {videosLoading ? (
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                       {[...Array(8)].map((_, i) => (
-                        <div key={i} className="h-48 bg-slate-100 rounded-xl animate-pulse" />
+                        <div key={i} className="h-48 bg-slate-800 rounded-xl animate-pulse" />
                       ))}
                     </div>
                   ) : (
@@ -317,47 +317,47 @@ export default function ChannelDetailPage({ params }: Props) {
           {/* 광고단가 탭 */}
           <TabsContent value="adprice">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <Card className="bg-white border-slate-200">
+              <Card className="bg-slate-900 border-slate-800">
                 <CardHeader>
-                  <CardTitle className="text-base font-semibold text-slate-800">
+                  <CardTitle className="text-base font-semibold text-slate-200">
                     광고 단가 정보
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex justify-between items-center py-3 border-b border-slate-100">
-                    <span className="text-sm text-slate-600">예상 협찬 단가</span>
+                  <div className="flex justify-between items-center py-3 border-b border-slate-800">
+                    <span className="text-sm text-slate-400">예상 협찬 단가</span>
                     <span className="text-lg font-bold text-indigo-600">
                       {formatCurrency(channel.estimatedAdPrice)}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center py-3 border-b border-slate-100">
-                    <span className="text-sm text-slate-600">예상 월 수익</span>
-                    <span className="font-semibold text-slate-900">
+                  <div className="flex justify-between items-center py-3 border-b border-slate-800">
+                    <span className="text-sm text-slate-400">예상 월 수익</span>
+                    <span className="font-semibold text-slate-100">
                       {formatCurrency(channel.estimatedRevenue)}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center py-3 border-b border-slate-100">
-                    <span className="text-sm text-slate-600">일평균 조회수</span>
-                    <span className="font-semibold text-slate-900">
+                  <div className="flex justify-between items-center py-3 border-b border-slate-800">
+                    <span className="text-sm text-slate-400">일평균 조회수</span>
+                    <span className="font-semibold text-slate-100">
                       {formatNumber(channel.dailyAvgViews)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center py-3">
-                    <span className="text-sm text-slate-600">참여율</span>
+                    <span className="text-sm text-slate-400">참여율</span>
                     <span className="font-semibold text-emerald-600">
                       {channel.engagementRate}%
                     </span>
                   </div>
                 </CardContent>
               </Card>
-              <Card className="bg-gradient-to-br from-indigo-50 to-violet-50 border-indigo-100">
+              <Card className="bg-gradient-to-br from-indigo-900/40 to-violet-900/40 border-indigo-800/50">
                 <CardHeader>
-                  <CardTitle className="text-base font-semibold text-indigo-800">
+                  <CardTitle className="text-base font-semibold text-indigo-300">
                     캠페인 제안 안내
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-indigo-700 leading-relaxed">
+                  <p className="text-sm text-indigo-300 leading-relaxed">
                     위 단가는 AI가 채널 규모, 카테고리, 참여율을 종합하여 산출한 예상 금액입니다.
                     실제 협찬 단가는 콘텐츠 형태 및 협의에 따라 달라질 수 있습니다.
                   </p>

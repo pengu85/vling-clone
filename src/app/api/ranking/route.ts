@@ -211,8 +211,12 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const type = searchParams.get("type") || "subscriber";
   const category = searchParams.get("category") || "all";
+  const period = searchParams.get("period") || "daily"; // daily | weekly | monthly (향후 기간별 데이터 분기에 활용)
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "20");
+
+  // period는 현재 캐시 키와 응답 메타에 포함되며, 향후 기간별 집계 데이터 분기 시 활용 가능
+  void period;
 
   let rankings: RankingEntry[];
 

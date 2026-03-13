@@ -3,6 +3,7 @@ import { youtubeClient } from "@/lib/youtube";
 import type { SearchChannelsOptions } from "@/lib/youtube";
 import { calculateAlgoScore } from "@/domain/algoScore";
 import { estimateMonthlyRevenue, estimateAdPrice } from "@/domain/revenueEstimate";
+import { deterministicGrowthRate } from "@/lib/utils";
 import type { ChannelSearchResult } from "@/types";
 
 // Map UI sort values to YouTube API order parameter values.
@@ -107,7 +108,7 @@ export async function GET(request: NextRequest) {
         thumbnailUrl: ch.snippet.thumbnails.high.url,
         subscriberCount,
         dailyAvgViews,
-        growthRate30d: parseFloat((Math.random() * 5 - 1).toFixed(1)),
+        growthRate30d: deterministicGrowthRate(ch.id),
         algoScore,
         estimatedRevenue,
         category: "entertainment",

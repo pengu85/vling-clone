@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { BarChart3, TrendingUp, DollarSign, Users } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   BarChart,
@@ -32,16 +32,40 @@ const CATEGORY_DATA = [
   { name: "키즈", cpm: 2200, growth: -1.5, channels: 4200, color: "#fb923c" },
 ];
 
+interface CategoryItem {
+  name: string;
+  cpm: number;
+  growth: number;
+  channels: number;
+  color: string;
+}
+
+async function fetchCategoryTrends(): Promise<CategoryItem[]> {
+  const res = await fetch("/api/ranking/categories");
+  if (!res.ok) throw new Error("카테고리 트렌드 로딩 실패");
+  const json = await res.json();
+  return json.data;
+}
+
 type SortKey = "cpm" | "growth" | "channels";
 
 export default function CategoryTrendsPage() {
   const [sortBy, setSortBy] = useState<SortKey>("cpm");
 
-  const sorted = [...CATEGORY_DATA].sort((a, b) => b[sortBy] - a[sortBy]);
+  const { data: categories } = useQuery({
+    queryKey: ["category-trends"],
+    queryFn: fetchCategoryTrends,
+    staleTime: 60 * 60 * 1000, // 1 hour
+    placeholderData: CATEGORY_DATA,
+  });
 
-  const avgCpm = Math.round(CATEGORY_DATA.reduce((s, c) => s + c.cpm, 0) / CATEGORY_DATA.length);
-  const avgGrowth = (CATEGORY_DATA.reduce((s, c) => s + c.growth, 0) / CATEGORY_DATA.length).toFixed(1);
-  const totalChannels = CATEGORY_DATA.reduce((s, c) => s + c.channels, 0);
+  const categoryData = categories ?? CATEGORY_DATA;
+
+  const sorted = [...categoryData].sort((a, b) => b[sortBy] - a[sortBy]);
+
+  const avgCpm = Math.round(categoryData.reduce((s, c) => s + c.cpm, 0) / categoryData.length);
+  const avgGrowth = (categoryData.reduce((s, c) => s + c.growth, 0) / categoryData.length).toFixed(1);
+  const totalChannels = categoryData.reduce((s, c) => s + c.channels, 0);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
@@ -142,6 +166,7 @@ export default function CategoryTrendsPage() {
                   <button
                     key={key}
                     onClick={() => setSortBy(key)}
+                    aria-pressed={sortBy === key}
                     className={`px-3 py-1 text-xs rounded-md transition-colors ${
                       sortBy === key
                         ? "bg-violet-600 text-white"

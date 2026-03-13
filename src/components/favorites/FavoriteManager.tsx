@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Folder,
   FolderPlus,
@@ -192,9 +193,11 @@ export function FavoriteManager() {
                   >
                     <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-slate-700">
                       {channel.thumbnailUrl ? (
-                        <img
+                        <Image
                           src={channel.thumbnailUrl}
                           alt={channel.title}
+                          width={40}
+                          height={40}
                           className="h-full w-full object-cover"
                         />
                       ) : (

@@ -23,13 +23,18 @@ interface GrowthChartProps {
   title?: string;
 }
 
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+
 function generateMockGrowthData(days: number): GrowthDataPoint[] {
   const points: GrowthDataPoint[] = [];
   const now = new Date();
   for (let i = days - 1; i >= 0; i--) {
     const date = new Date(now);
     date.setDate(date.getDate() - i);
-    const rate = parseFloat(((Math.random() - 0.4) * 6).toFixed(2));
+    const rate = parseFloat(((seededRandom(days * 100 + i) - 0.4) * 6).toFixed(2));
     points.push({
       date: `${date.getMonth() + 1}/${date.getDate()}`,
       rate,
@@ -44,9 +49,9 @@ export function GrowthChart({ data, title = "성장률 추이" }: GrowthChartPro
   }, [data]);
 
   return (
-    <Card className="bg-white border-slate-200">
+    <Card className="bg-slate-900 border-slate-800">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-slate-700">{title}</CardTitle>
+        <CardTitle className="text-sm font-medium text-slate-300">{title}</CardTitle>
       </CardHeader>
       <CardContent className="pt-0">
         <ResponsiveContainer width="100%" height={200}>
@@ -61,7 +66,7 @@ export function GrowthChart({ data, title = "성장률 추이" }: GrowthChartPro
                 <stop offset="95%" stopColor="#ef4444" stopOpacity={0.3} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
             <XAxis
               dataKey="date"
               tick={{ fontSize: 10, fill: "#94a3b8" }}
@@ -80,15 +85,17 @@ export function GrowthChart({ data, title = "성장률 추이" }: GrowthChartPro
               contentStyle={{
                 fontSize: 12,
                 borderRadius: 8,
-                border: "1px solid #e2e8f0",
-                boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
+                border: "1px solid #334155",
+                backgroundColor: "#1e293b",
+                color: "#e2e8f0",
+                boxShadow: "0 4px 6px -1px rgba(0,0,0,0.4)",
               }}
               formatter={(value) => {
                 const v = Number(value ?? 0);
                 return [`${v >= 0 ? "+" : ""}${v}%`, "성장률"];
               }}
             />
-            <ReferenceLine y={0} stroke="#cbd5e1" strokeDasharray="4 4" />
+            <ReferenceLine y={0} stroke="#475569" strokeDasharray="4 4" />
             <Area
               type="monotone"
               dataKey="rate"
