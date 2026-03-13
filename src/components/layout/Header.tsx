@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { Search, Menu, LogOut, User, Moon, Sun } from "lucide-react"
 import { useSession, signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
@@ -15,6 +15,9 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
+import { useAutocomplete } from "@/hooks/useAutocomplete"
+import { AutocompleteDropdown } from "@/components/search/AutocompleteDropdown"
+import type { AutocompleteChannel } from "@/app/api/youtube/autocomplete/route"
 
 const navLinks = [
   { label: "기능", href: "/features" },
@@ -125,11 +128,67 @@ export function Header() {
   const router = useRouter()
   const { theme, toggleTheme } = useThemeStore()
 
+  // Refs for click-outside detection on desktop and mobile search wrappers
+  const desktopSearchRef = useRef<HTMLDivElement>(null)
+  const mobileSearchRef = useRef<HTMLDivElement>(null)
+
+  const {
+    suggestions,
+    isOpen,
+    activeIndex,
+    setIsOpen,
+    setActiveIndex,
+    clearSuggestions,
+  } = useAutocomplete(searchValue)
+
+  // Click-outside handler: close dropdown when clicking outside both search wrappers
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Node
+      const outsideDesktop =
+        !desktopSearchRef.current || !desktopSearchRef.current.contains(target)
+      const outsideMobile =
+        !mobileSearchRef.current || !mobileSearchRef.current.contains(target)
+      if (outsideDesktop && outsideMobile) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [setIsOpen])
+
   function handleHeaderSearch() {
     const q = searchValue.trim()
     if (q) {
+      clearSuggestions()
       router.push(`/search?q=${encodeURIComponent(q)}`)
       setSearchValue("")
+    }
+  }
+
+  const handleSelectChannel = useCallback(
+    (channel: AutocompleteChannel) => {
+      clearSuggestions()
+      setSearchValue("")
+      router.push(`/channel/${channel.channelId}`)
+    },
+    [clearSuggestions, router]
+  )
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!isOpen || suggestions.length === 0) return
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault()
+      setActiveIndex(Math.min(activeIndex + 1, suggestions.length - 1))
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault()
+      setActiveIndex(Math.max(activeIndex - 1, -1))
+    } else if (e.key === "Enter" && activeIndex >= 0) {
+      e.preventDefault()
+      handleSelectChannel(suggestions[activeIndex])
+    } else if (e.key === "Escape") {
+      setIsOpen(false)
     }
   }
 
@@ -144,15 +203,31 @@ export function Header() {
         </Link>
 
         {/* 검색바 (데스크탑) */}
-        <form onSubmit={(e) => { e.preventDefault(); handleHeaderSearch() }} className="hidden md:flex flex-1 max-w-md relative mx-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none z-10" />
-          <Input
-            value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-            placeholder="채널명, 키워드로 검색..."
-            className="pl-9 bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500 focus-visible:border-violet-500 focus-visible:ring-violet-500/20 h-8 text-sm"
-          />
-        </form>
+        <div ref={desktopSearchRef} className="hidden md:flex flex-1 max-w-md relative mx-4">
+          <form
+            onSubmit={(e) => { e.preventDefault(); handleHeaderSearch() }}
+            className="w-full relative"
+          >
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none z-10" />
+            <Input
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onFocus={() => { if (suggestions.length > 0) setIsOpen(true) }}
+              placeholder="채널명, 키워드로 검색..."
+              className="pl-9 bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500 focus-visible:border-violet-500 focus-visible:ring-violet-500/20 h-8 text-sm"
+              autoComplete="off"
+            />
+          </form>
+          {isOpen && (
+            <AutocompleteDropdown
+              suggestions={suggestions}
+              activeIndex={activeIndex}
+              onSelect={handleSelectChannel}
+              onMouseEnter={setActiveIndex}
+            />
+          )}
+        </div>
 
         {/* 네비게이션 (데스크탑) */}
         <nav className="hidden lg:flex items-center gap-1">
@@ -203,17 +278,30 @@ export function Header() {
               </SheetHeader>
 
               {/* 모바일 검색 */}
-              <form onSubmit={(e) => { e.preventDefault(); handleHeaderSearch() }} className="px-4 pb-3">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none z-10" />
-                  <Input
-                    value={searchValue}
-                    onChange={(e) => setSearchValue(e.target.value)}
-                    placeholder="채널명, 키워드로 검색..."
-                    className="pl-9 bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500 h-9 text-sm"
+              <div ref={mobileSearchRef} className="px-4 pb-3 relative">
+                <form onSubmit={(e) => { e.preventDefault(); handleHeaderSearch() }}>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none z-10" />
+                    <Input
+                      value={searchValue}
+                      onChange={(e) => setSearchValue(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      onFocus={() => { if (suggestions.length > 0) setIsOpen(true) }}
+                      placeholder="채널명, 키워드로 검색..."
+                      className="pl-9 bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500 h-9 text-sm"
+                      autoComplete="off"
+                    />
+                  </div>
+                </form>
+                {isOpen && (
+                  <AutocompleteDropdown
+                    suggestions={suggestions}
+                    activeIndex={activeIndex}
+                    onSelect={handleSelectChannel}
+                    onMouseEnter={setActiveIndex}
                   />
-                </div>
-              </form>
+                )}
+              </div>
 
               {/* 모바일 네비게이션 */}
               <nav className="px-4 flex flex-col gap-1">

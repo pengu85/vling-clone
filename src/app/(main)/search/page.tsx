@@ -10,6 +10,8 @@ import type { SearchFilters as SearchFiltersType } from "@/hooks/useChannelSearc
 import { Button } from "@/components/ui/button";
 import { Download, Loader2, SearchX } from "lucide-react";
 import { channelsToCSV, downloadCSV } from "@/lib/csv";
+import { SearchHistory } from "@/components/search/SearchHistory";
+import { useSearchHistoryStore } from "@/stores/searchHistoryStore";
 
 const LIMIT = 20;
 
@@ -29,6 +31,7 @@ export default function SearchPage() {
   });
 
   const { data, isLoading, isFetching } = useChannelSearch(filters);
+  const addQuery = useSearchHistoryStore((s) => s.addQuery);
 
   const channels = data?.data ?? [];
   const total = data?.pagination?.total ?? 0;
@@ -37,6 +40,7 @@ export default function SearchPage() {
 
   function handleSearch(q: string) {
     setFilters((prev) => ({ ...prev, q, page: 1 }));
+    if (q.trim()) addQuery(q.trim());
   }
 
   function handleFilterChange(changed: Partial<SearchFiltersType>) {
@@ -81,6 +85,9 @@ export default function SearchPage() {
       <div className="max-w-2xl">
         <SearchBar onSearch={handleSearch} defaultValue={filters.q ?? ""} />
       </div>
+
+      {/* 검색 히스토리 */}
+      <SearchHistory onSelect={handleSearch} />
 
       {/* 필터 */}
       <SearchFilters filters={filters} onFilterChange={handleFilterChange} />

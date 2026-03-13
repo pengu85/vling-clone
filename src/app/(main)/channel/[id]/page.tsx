@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useEffect } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChannelProfile } from "@/components/channel/ChannelProfile";
@@ -14,6 +14,7 @@ import { generateMockChannel, generateMockVideos } from "@/lib/mockData";
 import { formatNumber, formatGrowthRate, formatCurrency } from "@/lib/formatters";
 import { TrendingUp, Zap, DollarSign, Activity } from "lucide-react";
 import { AIInsightPanel } from "@/components/channel/AIInsightPanel";
+import { useRecentStore } from "@/stores/recentStore";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -76,6 +77,26 @@ export default function ChannelDetailPage({ params }: Props) {
   // API 실패 시 목 데이터 폴백
   const channel = channelRes?.data ?? generateMockChannel(id);
   const videos = videosRes?.data ?? generateMockVideos(id, 8);
+
+  // Record recently viewed channel
+  const addRecent = useRecentStore((s) => s.addRecent);
+  useEffect(() => {
+    if (channel) {
+      addRecent({
+        id: channel.id,
+        youtubeId: channel.youtubeId,
+        title: channel.title,
+        thumbnailUrl: channel.thumbnailUrl,
+        subscriberCount: channel.subscriberCount,
+        dailyAvgViews: channel.dailyAvgViews,
+        growthRate30d: channel.growthRate30d,
+        algoScore: channel.algoScore,
+        estimatedRevenue: channel.estimatedRevenue,
+        category: channel.category,
+        country: channel.country,
+      });
+    }
+  }, [channel, addRecent]);
 
   // Merge trend data across all period fetches for the period-toggle charts
   // Use 90-day data as the full dataset; charts slice down to 30/60/90 as needed

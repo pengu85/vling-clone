@@ -14,6 +14,8 @@ import {
   GitCompare,
   FileText,
   Star,
+  Bell,
+  LayoutDashboard,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react"
@@ -63,7 +65,9 @@ const menuSections: MenuSection[] = [
   {
     title: "즐겨찾기",
     items: [
+      { label: "대시보드", href: "/my/dashboard", icon: LayoutDashboard },
       { label: "즐겨찾기 관리", href: "/my/favorites", icon: Star },
+      { label: "알림", href: "/my/alerts", icon: Bell },
     ],
   },
 ]
