@@ -51,6 +51,8 @@ export interface ChannelSearchResult {
   estimatedRevenue: number;
   category: string;
   country: string;
+  /** 전일 대비 구독자 변화 (mock) */
+  subscriberChange?: number;
   latestVideo?: {
     title: string;
     publishedAt: string;

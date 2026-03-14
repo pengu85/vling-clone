@@ -29,6 +29,11 @@ import {
   Target,
   HeartPulse,
   Handshake,
+  Megaphone,
+  ClipboardList,
+  Radio,
+  Flame,
+  ShieldAlert,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -61,7 +66,15 @@ const menuSections: MenuSection[] = [
       { label: "수익 순위", href: "/ranking/revenue", icon: DollarSign },
       { label: "슈퍼챗 순위", href: "/ranking/superchat", icon: Gift },
       { label: "요즘 뜨는", href: "/ranking/growth", icon: TrendingUp },
+      { label: "영상 순위", href: "/ranking/videos", icon: Video },
+      { label: "라이브 시청자", href: "/ranking/live", icon: Radio },
       { label: "카테고리 트렌드", href: "/ranking/categories", icon: BarChart2 },
+    ],
+  },
+  {
+    title: "트렌드",
+    items: [
+      { label: "인기 급상승", href: "/trending", icon: Flame },
     ],
   },
   {
@@ -82,6 +95,15 @@ const menuSections: MenuSection[] = [
       { label: "수익 역산기", href: "/tools/revenue-reverse", icon: Target },
       { label: "채널 건강검진", href: "/tools/channel-health", icon: HeartPulse },
       { label: "콜라보 궁합", href: "/tools/collab-score", icon: Handshake },
+      { label: "키워드 추이", href: "/tools/keyword-trends", icon: TrendingUp },
+      { label: "스팸 댓글 관리", href: "/tools/spam-comments", icon: ShieldAlert },
+    ],
+  },
+  {
+    title: "광고주",
+    items: [
+      { label: "캠페인 만들기", href: "/campaign/new", icon: Megaphone },
+      { label: "캠페인 관리", href: "/campaign/manage", icon: ClipboardList },
     ],
   },
   {

@@ -25,6 +25,9 @@ export default function SearchPage() {
     country: undefined,
     subscriberMin: undefined,
     subscriberMax: undefined,
+    minDailyViews: undefined,
+    maxDailyViews: undefined,
+    shortsChannel: "all",
     sort: "subscriber",
     page: 1,
     limit: LIMIT,
@@ -47,14 +50,12 @@ export default function SearchPage() {
 
   function handleSelectAll() {
     if (allPageSelected) {
-      // 현재 페이지 전체 해제
       setSelectedIds((prev) => {
         const next = new Set(prev);
         pageChannelIds.forEach((id) => next.delete(id));
         return next;
       });
     } else {
-      // 현재 페이지 전체 선택
       setSelectedIds((prev) => {
         const next = new Set(prev);
         pageChannelIds.forEach((id) => next.add(id));
@@ -74,7 +75,6 @@ export default function SearchPage() {
 
   function handleExportCSV() {
     if (channels.length === 0) return;
-    // 선택된 채널이 있으면 선택 항목만, 없으면 전체 내보내기
     const targets =
       selectedIds.size > 0
         ? channels.filter((ch) => selectedIds.has(ch.id))
@@ -166,7 +166,7 @@ export default function SearchPage() {
       {/* 테이블 헤더 */}
       <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900" role="region" aria-label="검색 결과">
         {/* 헤더 행 */}
-        <div className="grid grid-cols-[48px_minmax(200px,1fr)_120px_100px_120px_120px_minmax(160px,1fr)_40px] items-center gap-3 border-b border-slate-800 px-4 py-2.5 min-w-[960px] bg-slate-800/50">
+        <div className="grid grid-cols-[48px_minmax(180px,1fr)_110px_90px_110px_80px_110px_90px_minmax(140px,1fr)_40px] items-center gap-2 border-b border-slate-800 px-4 py-2.5 min-w-[1080px] bg-slate-800/50">
           <div className="text-center text-[10px] font-semibold uppercase tracking-wider text-slate-500">
             순위
           </div>
@@ -182,8 +182,14 @@ export default function SearchPage() {
           <div className="text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500">
             일 조회수
           </div>
+          <div className="text-center text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+            트렌드
+          </div>
           <div className="text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500">
             예상 수익
+          </div>
+          <div className="text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+            구독자 변화
           </div>
           <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
             최신 영상
@@ -193,11 +199,11 @@ export default function SearchPage() {
 
         {/* 로딩 스켈레톤 */}
         {isLoading && (
-          <div className="min-w-[960px]">
+          <div className="min-w-[1080px]">
             {Array.from({ length: 8 }).map((_, i) => (
               <div
                 key={i}
-                className="grid grid-cols-[48px_minmax(200px,1fr)_120px_100px_120px_120px_minmax(160px,1fr)_40px] items-center gap-3 border-b border-slate-800 px-4 py-3 last:border-0"
+                className="grid grid-cols-[48px_minmax(180px,1fr)_110px_90px_110px_80px_110px_90px_minmax(140px,1fr)_40px] items-center gap-2 border-b border-slate-800 px-4 py-3 last:border-0"
               >
                 <div className="mx-auto h-4 w-6 animate-pulse rounded bg-slate-700" />
                 <div className="flex items-center gap-3">
@@ -207,10 +213,10 @@ export default function SearchPage() {
                     <div className="h-3 w-16 animate-pulse rounded bg-slate-700" />
                   </div>
                 </div>
-                {Array.from({ length: 5 }).map((_, j) => (
+                {Array.from({ length: 7 }).map((_, j) => (
                   <div
                     key={j}
-                    className="ml-auto h-3 w-16 animate-pulse rounded bg-slate-700"
+                    className="ml-auto h-3 w-14 animate-pulse rounded bg-slate-700"
                   />
                 ))}
               </div>

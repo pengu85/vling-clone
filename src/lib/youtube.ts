@@ -77,6 +77,10 @@ interface YouTubeVideoResponse {
     contentDetails: {
       duration: string;
     };
+    liveStreamingDetails?: {
+      concurrentViewers?: string;
+      actualStartTime?: string;
+    };
   }>;
 }
 
@@ -133,9 +137,11 @@ export const youtubeClient = {
     });
   },
 
-  async getVideoDetails(videoIds: string[]): Promise<YouTubeVideoResponse> {
+  async getVideoDetails(videoIds: string[], includeLive = false): Promise<YouTubeVideoResponse> {
+    const parts = ["snippet", "statistics", "contentDetails"];
+    if (includeLive) parts.push("liveStreamingDetails");
     return youtubeGet<YouTubeVideoResponse>("videos", {
-      part: "snippet,statistics,contentDetails",
+      part: parts.join(","),
       id: videoIds.join(","),
     });
   },
@@ -176,6 +182,50 @@ export const youtubeClient = {
       return searchResult.items[0].id.channelId ?? null;
     }
     return null;
+  },
+
+  async getTrendingVideos(
+    regionCode = "KR",
+    categoryId?: string,
+    maxResults = 20
+  ): Promise<YouTubeVideoResponse> {
+    const params: Record<string, string> = {
+      part: "snippet,statistics,contentDetails",
+      chart: "mostPopular",
+      regionCode,
+      maxResults: String(maxResults),
+    };
+    if (categoryId) params.videoCategoryId = categoryId;
+    return youtubeGet<YouTubeVideoResponse>("videos", params);
+  },
+
+  async getLiveStreams(
+    regionCode = "KR",
+    maxResults = 20
+  ): Promise<YouTubeSearchResponse> {
+    return youtubeGet<YouTubeSearchResponse>("search", {
+      part: "snippet",
+      type: "video",
+      eventType: "live",
+      order: "viewCount",
+      regionCode,
+      maxResults: String(maxResults),
+    });
+  },
+
+  async searchVideosByCategory(
+    categoryId: string,
+    maxResults = 20,
+    order: "viewCount" | "date" | "relevance" = "viewCount"
+  ): Promise<YouTubeSearchResponse> {
+    return youtubeGet<YouTubeSearchResponse>("search", {
+      part: "snippet",
+      type: "video",
+      order,
+      videoCategoryId: categoryId,
+      regionCode: "KR",
+      maxResults: String(maxResults),
+    });
   },
 
   async getVideoComments(

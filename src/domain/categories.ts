@@ -43,10 +43,25 @@ export const SUBSCRIBER_RANGES = [
   { value: '1000000+', label: '100만 이상', min: 1000000, max: Infinity },
 ] as const;
 
+export const DAILY_VIEW_RANGES = [
+  { value: '0-1000', label: '1천 이하', min: 0, max: 1000 },
+  { value: '1000-10000', label: '1천~1만', min: 1000, max: 10000 },
+  { value: '10000-100000', label: '1만~10만', min: 10000, max: 100000 },
+  { value: '100000-1000000', label: '10만~100만', min: 100000, max: 1000000 },
+  { value: '1000000+', label: '100만 이상', min: 1000000, max: Infinity },
+] as const;
+
+export const SHORTS_OPTIONS = [
+  { value: 'all', label: '전체' },
+  { value: 'yes', label: 'Shorts 채널' },
+  { value: 'no', label: '일반 채널' },
+] as const;
+
 export const SORT_OPTIONS = [
   { value: 'subscriber', label: '구독자 수' },
   { value: 'view', label: '일 평균 조회수' },
   { value: 'growth', label: '성장률' },
   { value: 'trendsScore', label: '트렌드 스코어' },
   { value: 'revenue', label: '예상 수익' },
+  { value: 'latest', label: '최신순' },
 ] as const;

@@ -1,5 +1,6 @@
 import NextAuth, { type DefaultSession } from "next-auth"
 import Credentials from "next-auth/providers/credentials"
+import Google from "next-auth/providers/google"
 import type { UserRole, PlanTier } from "@/types/channel"
 
 // ---------------------------------------------------------------------------
@@ -62,6 +63,14 @@ declare module "@auth/core/jwt" {
 }
 
 // ---------------------------------------------------------------------------
+// Conditional Google provider (only if env vars are set)
+// ---------------------------------------------------------------------------
+
+const googleClientId = process.env.GOOGLE_CLIENT_ID ?? ""
+const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET ?? ""
+const hasGoogleCredentials = !!(googleClientId && googleClientSecret)
+
+// ---------------------------------------------------------------------------
 // NextAuth config
 // ---------------------------------------------------------------------------
 
@@ -92,6 +101,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
       },
     }),
+    ...(hasGoogleCredentials
+      ? [
+          Google({
+            clientId: googleClientId,
+            clientSecret: googleClientSecret,
+          }),
+        ]
+      : []),
   ],
 
   session: { strategy: "jwt" },
@@ -101,8 +118,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         // user.id is typed as string | undefined in next-auth v5 beta
         token.id = (user.id ?? "") as string
-        token.role = (user as { role: UserRole }).role
-        token.plan = (user as { plan: PlanTier }).plan
+        // Google OAuth users won't have role/plan — assign defaults
+        token.role = ((user as { role?: UserRole }).role ?? "advertiser") as UserRole
+        token.plan = ((user as { plan?: PlanTier }).plan ?? "basic") as PlanTier
       }
       return token
     },

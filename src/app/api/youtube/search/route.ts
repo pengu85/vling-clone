@@ -3,7 +3,7 @@ import { youtubeClient } from "@/lib/youtube";
 import type { SearchChannelsOptions } from "@/lib/youtube";
 import { calculateAlgoScore } from "@/domain/algoScore";
 import { estimateMonthlyRevenue, estimateAdPrice } from "@/domain/revenueEstimate";
-import { deterministicGrowthRate } from "@/lib/utils";
+import { deterministicGrowthRate, seededRandom } from "@/lib/utils";
 import type { ChannelSearchResult } from "@/types";
 
 // Map UI sort values to YouTube API order parameter values.
@@ -14,6 +14,7 @@ function mapSortToOrder(sort: string | null): SearchChannelsOptions["order"] {
     case "view":
       return "viewCount";
     case "growth":
+    case "latest":
       return "date";
     case "title":
       return "title";
@@ -21,6 +22,24 @@ function mapSortToOrder(sort: string | null): SearchChannelsOptions["order"] {
     default:
       return "relevance";
   }
+}
+
+/**
+ * Generate a deterministic subscriber change value (mock) based on channel ID.
+ * Returns a value between -500 and +5000.
+ */
+function deterministicSubscriberChange(channelId: string): number {
+  let hash = 0;
+  for (let i = 0; i < channelId.length; i++) {
+    hash = ((hash << 5) - hash + channelId.charCodeAt(i)) | 0;
+  }
+  // Use seededRandom for a 0-1 range, then scale
+  const rand = seededRandom(Math.abs(hash));
+  // 70% chance positive, 30% negative
+  if (rand < 0.3) {
+    return -Math.round(rand * 1600); // -0 to -480
+  }
+  return Math.round(rand * 5000); // 0 to 5000
 }
 
 export async function GET(request: NextRequest) {
@@ -38,6 +57,13 @@ export async function GET(request: NextRequest) {
   const subscriberMax = searchParams.get("subscriberMax")
     ? parseInt(searchParams.get("subscriberMax")!)
     : null;
+  const minDailyViews = searchParams.get("minDailyViews")
+    ? parseInt(searchParams.get("minDailyViews")!)
+    : null;
+  const maxDailyViews = searchParams.get("maxDailyViews")
+    ? parseInt(searchParams.get("maxDailyViews")!)
+    : null;
+  const shortsChannel = searchParams.get("shortsChannel") || "all";
   const sort = searchParams.get("sort") || null;
 
   if (!q) {
@@ -101,6 +127,8 @@ export async function GET(request: NextRequest) {
         category: "entertainment",
       });
 
+      const subscriberChange = deterministicSubscriberChange(ch.id);
+
       return {
         id: ch.id,
         youtubeId: ch.id,
@@ -111,6 +139,7 @@ export async function GET(request: NextRequest) {
         growthRate30d: deterministicGrowthRate(ch.id),
         algoScore,
         estimatedRevenue,
+        subscriberChange,
         category: "entertainment",
         country: ch.snippet.country || "KR",
       };
@@ -126,11 +155,45 @@ export async function GET(request: NextRequest) {
       channels = channels.filter((ch) => ch.subscriberCount <= subscriberMax);
     }
 
+    // Daily views range filter
+    if (minDailyViews !== null) {
+      channels = channels.filter((ch) => ch.dailyAvgViews >= minDailyViews);
+    }
+    if (maxDailyViews !== null) {
+      channels = channels.filter((ch) => ch.dailyAvgViews <= maxDailyViews);
+    }
+
+    // Shorts channel filter (mock: deterministic based on channel ID)
+    if (shortsChannel === "yes") {
+      channels = channels.filter((ch) => {
+        const rand = seededRandom(ch.id.charCodeAt(0) + ch.id.charCodeAt(ch.id.length - 1));
+        return rand > 0.5;
+      });
+    } else if (shortsChannel === "no") {
+      channels = channels.filter((ch) => {
+        const rand = seededRandom(ch.id.charCodeAt(0) + ch.id.charCodeAt(ch.id.length - 1));
+        return rand <= 0.5;
+      });
+    }
+
     // Category filter (YouTube channel search has no category parameter)
     if (category) {
       channels = channels.filter(
         (ch) => ch.category?.toLowerCase() === category.toLowerCase()
       );
+    }
+
+    // Client-side sorting for sort options that YouTube API doesn't support natively
+    if (sort === "trendsScore") {
+      channels.sort((a, b) => b.algoScore - a.algoScore);
+    } else if (sort === "revenue") {
+      channels.sort((a, b) => b.estimatedRevenue - a.estimatedRevenue);
+    } else if (sort === "subscriber") {
+      channels.sort((a, b) => b.subscriberCount - a.subscriberCount);
+    } else if (sort === "view") {
+      channels.sort((a, b) => b.dailyAvgViews - a.dailyAvgViews);
+    } else if (sort === "growth") {
+      channels.sort((a, b) => b.growthRate30d - a.growthRate30d);
     }
 
     const total = channels.length;

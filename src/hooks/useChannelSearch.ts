@@ -8,6 +8,9 @@ interface SearchFilters {
   country?: string;
   subscriberMin?: number;
   subscriberMax?: number;
+  minDailyViews?: number;
+  maxDailyViews?: number;
+  shortsChannel?: "all" | "yes" | "no";
   sort?: string;
   page?: number;
   limit?: number;
