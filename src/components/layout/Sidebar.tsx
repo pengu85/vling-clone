@@ -19,6 +19,11 @@ import {
   LayoutDashboard,
   ChevronLeft,
   ChevronRight,
+  Image as ImageIcon,
+  Zap,
+  Dna,
+  LineChart,
+  MessageSquareText,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -62,6 +67,11 @@ const menuSections: MenuSection[] = [
       { label: "채널 비교", href: "/tools/compare", icon: GitCompare },
       { label: "AI 콘텐츠", href: "/tools/ai-content", icon: FileText },
       { label: "유튜버 모니터", href: "/tools/youtuber-tracker", icon: Activity },
+      { label: "썸네일 분석", href: "/tools/thumbnail-analyzer", icon: ImageIcon },
+      { label: "바이럴 예측", href: "/tools/viral-predictor", icon: Zap },
+      { label: "채널 DNA", href: "/tools/channel-dna", icon: Dna },
+      { label: "수익 시뮬레이터", href: "/tools/revenue-simulator", icon: LineChart },
+      { label: "댓글 분석", href: "/tools/comment-analyzer", icon: MessageSquareText },
     ],
   },
   {

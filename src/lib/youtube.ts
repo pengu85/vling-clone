@@ -38,6 +38,27 @@ interface YouTubeSearchResponse {
   nextPageToken?: string;
 }
 
+export interface YouTubeCommentThreadResponse {
+  items: Array<{
+    id: string;
+    snippet: {
+      topLevelComment: {
+        id: string;
+        snippet: {
+          textDisplay: string;
+          likeCount: number;
+          publishedAt: string;
+          authorDisplayName: string;
+          authorProfileImageUrl: string;
+        };
+      };
+      totalReplyCount: number;
+    };
+  }>;
+  nextPageToken?: string;
+  pageInfo: { totalResults: number };
+}
+
 interface YouTubeVideoResponse {
   items: Array<{
     id: string;
@@ -155,5 +176,18 @@ export const youtubeClient = {
       return searchResult.items[0].id.channelId ?? null;
     }
     return null;
+  },
+
+  async getVideoComments(
+    videoId: string,
+    maxResults = 100
+  ): Promise<YouTubeCommentThreadResponse> {
+    return youtubeGet<YouTubeCommentThreadResponse>("commentThreads", {
+      part: "snippet",
+      videoId,
+      maxResults: String(maxResults),
+      order: "relevance",
+      textFormat: "plainText",
+    });
   },
 };
