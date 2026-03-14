@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { youtubeClient } from "@/lib/youtube";
+import { parseChannelInput } from "@/lib/parseChannel";
 
 /* ---------- Types ---------- */
 
@@ -254,30 +255,6 @@ function calculateExpectedEffects(
   };
 }
 
-/* ---------- Channel Input Parser ---------- */
-
-function parseChannelInput(
-  input: string
-): { type: "id" | "handle" | "search"; value: string } {
-  const trimmed = input.trim();
-  if (/^UC[\w-]{22}$/.test(trimmed)) return { type: "id", value: trimmed };
-
-  const urlPatterns = [
-    /youtube\.com\/channel\/(UC[\w-]{22})/,
-    /youtube\.com\/@([\w.-]+)/,
-    /youtube\.com\/c\/([\w.-]+)/,
-  ];
-  for (const pattern of urlPatterns) {
-    const match = trimmed.match(pattern);
-    if (match) {
-      if (match[1].startsWith("UC")) return { type: "id", value: match[1] };
-      return { type: "handle", value: match[1] };
-    }
-  }
-  if (trimmed.startsWith("@")) return { type: "handle", value: trimmed.slice(1) };
-  return { type: "search", value: trimmed };
-}
-
 async function resolveChannelId(input: string): Promise<string | null> {
   const parsed = parseChannelInput(input);
   if (parsed.type === "id") return parsed.value;
@@ -365,53 +342,6 @@ async function fetchChannelStats(channelId: string): Promise<ChannelStats> {
   };
 }
 
-/* ---------- Mock Fallback ---------- */
-
-function seededRandom(seed: number): number {
-  const x = Math.sin(seed) * 10000;
-  return x - Math.floor(x);
-}
-
-function generateMockStats(input: string, seedOffset: number): ChannelStats {
-  const seed =
-    input.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0) + seedOffset;
-  const categories = [
-    "게임",
-    "뷰티",
-    "먹방",
-    "일상",
-    "교육",
-    "음악",
-    "기술",
-    "엔터",
-  ];
-  const subscribers = Math.round(10000 + seededRandom(seed * 10) * 990000);
-  const avgViews = Math.round(subscribers * (0.05 + seededRandom(seed * 11) * 0.3));
-  const avgLikes = Math.round(avgViews * (0.02 + seededRandom(seed * 12) * 0.06));
-  const avgComments = Math.round(avgViews * (0.005 + seededRandom(seed * 13) * 0.02));
-
-  return {
-    channelId: `UC${input.slice(0, 22).padEnd(22, String(seedOffset))}`,
-    name: input.startsWith("@")
-      ? input
-      : `채널 ${input.slice(0, 8)}`,
-    thumbnail: `https://placehold.co/176x176/1e293b/94a3b8?text=${encodeURIComponent(input.slice(0, 2))}`,
-    subscribers,
-    videoCount: Math.round(50 + seededRandom(seed * 14) * 450),
-    viewCount: Math.round(avgViews * (100 + seededRandom(seed * 15) * 400)),
-    category: categories[Math.floor(seededRandom(seed * 16) * categories.length)],
-    avgViews,
-    avgLikes,
-    avgComments,
-    avgDurationSeconds: Math.round(300 + seededRandom(seed * 17) * 1200),
-    uploadsPerMonth: Math.round((2 + seededRandom(seed * 18) * 18) * 10) / 10,
-    engagementRate:
-      avgViews > 0
-        ? Math.round(((avgLikes + avgComments) / avgViews) * 10000) / 10000
-        : 0,
-  };
-}
-
 /* ---------- API Route ---------- */
 
 export async function POST(request: NextRequest) {
@@ -439,9 +369,7 @@ export async function POST(request: NextRequest) {
 
     const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
     if (!YOUTUBE_API_KEY) {
-      // Mock fallback
-      statsA = generateMockStats(rawA.trim(), 0);
-      statsB = generateMockStats(rawB.trim(), 100);
+      return NextResponse.json({ error: { code: "API_KEY_REQUIRED", message: "YouTube API 키가 설정되지 않았습니다" } }, { status: 503 });
     } else {
       const [idA, idB] = await Promise.all([
         resolveChannelId(rawA.trim()),

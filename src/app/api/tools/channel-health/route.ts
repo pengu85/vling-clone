@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { youtubeClient } from "@/lib/youtube";
+import { parseChannelInput } from "@/lib/parseChannel";
 
 /* ---------- Types ---------- */
 
@@ -234,153 +235,18 @@ function buildDiagnosis(items: HealthItem[]): DiagnosisSummary {
   };
 }
 
-/* ---------- Category Average (simulated) ---------- */
+/* ---------- Category Average ---------- */
 
-function getCategoryAverage(seed: number): CategoryAverage {
-  // In production, this would come from aggregated data
-  const base = (offset: number) => 55 + Math.round(seededRandom(seed + offset) * 20);
-  return {
-    uploadConsistency: base(1),
-    viewStability: base(2),
-    growthMomentum: base(3),
-    engagementHealth: base(4),
-    shortsDependency: base(5),
-    contentDiversity: base(6),
-  };
-}
+const CATEGORY_BENCHMARKS: Record<string, CategoryAverage> = {
+  default:       { uploadConsistency: 60, viewStability: 60, growthMomentum: 55, engagementHealth: 55, shortsDependency: 65, contentDiversity: 58 },
+  gaming:        { uploadConsistency: 70, viewStability: 55, growthMomentum: 52, engagementHealth: 65, shortsDependency: 60, contentDiversity: 55 },
+  music:         { uploadConsistency: 50, viewStability: 65, growthMomentum: 65, engagementHealth: 60, shortsDependency: 55, contentDiversity: 62 },
+  entertainment: { uploadConsistency: 60, viewStability: 60, growthMomentum: 60, engagementHealth: 60, shortsDependency: 60, contentDiversity: 60 },
+  education:     { uploadConsistency: 65, viewStability: 55, growthMomentum: 50, engagementHealth: 50, shortsDependency: 70, contentDiversity: 65 },
+};
 
-/* ---------- Channel Input Parser ---------- */
-
-function parseChannelInput(input: string): { type: "id" | "handle" | "search"; value: string } {
-  const trimmed = input.trim();
-
-  if (/^UC[\w-]{22}$/.test(trimmed)) {
-    return { type: "id", value: trimmed };
-  }
-
-  const urlPatterns = [
-    /youtube\.com\/channel\/(UC[\w-]{22})/,
-    /youtube\.com\/@([\w.-]+)/,
-    /youtube\.com\/c\/([\w.-]+)/,
-  ];
-  for (const pattern of urlPatterns) {
-    const match = trimmed.match(pattern);
-    if (match) {
-      if (match[1].startsWith("UC")) return { type: "id", value: match[1] };
-      return { type: "handle", value: match[1] };
-    }
-  }
-
-  if (trimmed.startsWith("@")) {
-    return { type: "handle", value: trimmed.slice(1) };
-  }
-
-  return { type: "search", value: trimmed };
-}
-
-/* ---------- Mock ---------- */
-
-function seededRandom(seed: number): number {
-  const x = Math.sin(seed) * 10000;
-  return x - Math.floor(x);
-}
-
-function generateMockResponse(channelInput: string): HealthResponse {
-  const seed = channelInput.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
-
-  const scores = {
-    uploadConsistency: Math.round(40 + seededRandom(seed * 1) * 55),
-    viewStability: Math.round(35 + seededRandom(seed * 2) * 60),
-    growthMomentum: Math.round(30 + seededRandom(seed * 3) * 65),
-    engagementHealth: Math.round(25 + seededRandom(seed * 4) * 70),
-    shortsDependency: Math.round(30 + seededRandom(seed * 5) * 65),
-    contentDiversity: Math.round(35 + seededRandom(seed * 6) * 55),
-  };
-
-  const items: HealthItem[] = [
-    {
-      key: "uploadConsistency",
-      label: "업로드 일관성",
-      score: scores.uploadConsistency,
-      status: getStatus(scores.uploadConsistency),
-      description: scores.uploadConsistency >= 70
-        ? "평균 5일 간격으로 매우 규칙적"
-        : scores.uploadConsistency >= 45
-          ? "업로드 간격이 다소 불규칙"
-          : "업로드 간격이 매우 불규칙",
-    },
-    {
-      key: "viewStability",
-      label: "조회수 안정성",
-      score: scores.viewStability,
-      status: getStatus(scores.viewStability),
-      description: scores.viewStability >= 70
-        ? "조회수가 안정적으로 유지됨"
-        : "조회수 변동이 있음",
-    },
-    {
-      key: "growthMomentum",
-      label: "성장 모멘텀",
-      score: scores.growthMomentum,
-      status: getStatus(scores.growthMomentum),
-      description: scores.growthMomentum >= 70
-        ? "상승 추세를 보이고 있음"
-        : "성장세가 둔화됨",
-    },
-    {
-      key: "engagementHealth",
-      label: "참여도 건강",
-      score: scores.engagementHealth,
-      status: getStatus(scores.engagementHealth),
-      description: scores.engagementHealth >= 70
-        ? "높은 좋아요/댓글 비율"
-        : "참여도 개선 필요",
-    },
-    {
-      key: "shortsDependency",
-      label: "쇼츠 의존도",
-      score: scores.shortsDependency,
-      status: getStatus(scores.shortsDependency),
-      description: scores.shortsDependency >= 70
-        ? "쇼츠 비중이 적절한 균형"
-        : "쇼츠 비중이 높아 장기 성장에 불리",
-    },
-    {
-      key: "contentDiversity",
-      label: "콘텐츠 다양성",
-      score: scores.contentDiversity,
-      status: getStatus(scores.contentDiversity),
-      description: scores.contentDiversity >= 70
-        ? "다양한 주제의 콘텐츠 제작"
-        : "특정 주제에 편중",
-    },
-  ];
-
-  const weights = [0.15, 0.2, 0.2, 0.2, 0.1, 0.15];
-  const totalScore = Math.round(
-    items.reduce((sum, item, i) => sum + item.score * weights[i], 0)
-  );
-
-  const { grade, comment } = getGrade(totalScore);
-  const categoryAvg = getCategoryAverage(seed);
-
-  return {
-    channelId: `UC${channelInput.slice(0, 22).padEnd(22, "x")}`,
-    channelName: channelInput.startsWith("@") ? channelInput : `채널 ${channelInput.slice(0, 8)}`,
-    thumbnail: `https://placehold.co/176x176/1e293b/94a3b8?text=${encodeURIComponent(channelInput.slice(0, 2))}`,
-    subscribers: Math.round(10000 + seededRandom(seed * 10) * 990000),
-    totalScore,
-    grade,
-    gradeComment: comment,
-    items,
-    diagnosis: buildDiagnosis(items),
-    categoryAverage: categoryAvg,
-    radarData: items.map((item) => ({
-      axis: item.label,
-      channel: item.score,
-      average: categoryAvg[item.key as keyof CategoryAverage] || 60,
-    })),
-  };
+function getCategoryAverage(category?: string): CategoryAverage {
+  return CATEGORY_BENCHMARKS[category ?? ""] ?? CATEGORY_BENCHMARKS.default;
 }
 
 /* ---------- API Route ---------- */
@@ -399,8 +265,7 @@ export async function POST(request: NextRequest) {
 
     const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
     if (!YOUTUBE_API_KEY) {
-      const mockData = generateMockResponse(rawInput);
-      return NextResponse.json({ data: mockData });
+      return NextResponse.json({ error: { code: "API_KEY_REQUIRED", message: "YouTube API 키가 설정되지 않았습니다" } }, { status: 503 });
     }
 
     // Resolve channel ID
@@ -439,8 +304,10 @@ export async function POST(request: NextRequest) {
       .filter((id): id is string => !!id);
 
     if (videoIds.length === 0) {
-      const mockData = generateMockResponse(rawInput);
-      return NextResponse.json({ data: mockData });
+      return NextResponse.json(
+        { error: { code: "NO_DATA", message: "채널에 분석할 영상이 없습니다" } },
+        { status: 404 }
+      );
     }
 
     const videoDetails = await youtubeClient.getVideoDetails(videoIds);
@@ -480,8 +347,7 @@ export async function POST(request: NextRequest) {
     );
 
     const { grade, comment } = getGrade(totalScore);
-    const seedVal = resolvedId.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
-    const categoryAvg = getCategoryAverage(seedVal);
+    const categoryAvg = getCategoryAverage();
 
     const response: HealthResponse = {
       channelId: resolvedId,

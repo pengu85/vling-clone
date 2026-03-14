@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { youtubeClient } from "@/lib/youtube";
+import { cache } from "@/lib/cache";
 
 /* ---------- Types ---------- */
 
@@ -7,13 +8,13 @@ interface TrendingKeyword {
   rank: number;
   keyword: string;
   videoCount: number;
-  growth: number;
+  growth: number; // 조회 속도 기반 성장 지수
   competition: "높음" | "중간" | "낮음";
 }
 
 interface BlueOceanKeyword {
   keyword: string;
-  searchVolume: number;
+  searchVolume: number; // 추정 검색량 (조회수 기반)
   videoCount: number;
   opportunityScore: number;
 }
@@ -29,111 +30,143 @@ interface TrendSurfingResponse {
   timeline: Record<string, TrendTimelinePoint[]>;
 }
 
-/* ---------- Category Mapping ---------- */
+/* ---------- Category → YouTube Category ID ---------- */
 
-const categoryQueries: Record<string, string[]> = {
-  전체: ["인기", "트렌드", "화제"],
-  엔터: ["예능", "드라마", "연예인", "아이돌", "K-POP"],
-  교육: ["공부", "강의", "학습", "교육", "자격증"],
-  게임: ["게임", "롤", "발로란트", "마인크래프트", "스팀"],
-  뷰티: ["메이크업", "화장", "뷰티", "스킨케어", "피부"],
-  테크: ["IT", "코딩", "AI", "개발", "프로그래밍", "스마트폰"],
-  음식: ["먹방", "요리", "맛집", "레시피", "카페"],
-  여행: ["여행", "브이로그", "해외", "캠핑", "관광"],
-  스포츠: ["축구", "야구", "운동", "헬스", "스포츠"],
+const categoryIdMap: Record<string, string> = {
+  전체: "",
+  엔터: "24",  // Entertainment
+  교육: "27",  // Education
+  게임: "20",  // Gaming
+  뷰티: "26",  // Howto & Style
+  테크: "28",  // Science & Technology
+  음식: "26",  // Howto & Style (음식도 여기에 포함)
+  여행: "19",  // Travel & Events
+  스포츠: "17", // Sports
 };
 
-const regionCodes: Record<string, string> = {
+// 음식 카테고리는 별도 키워드 검색으로 보완
+const categoryFallbackQueries: Record<string, string[]> = {
+  음식: ["먹방", "요리", "맛집", "레시피"],
+  전체: [],
+};
+
+const regionCodeMap: Record<string, string> = {
   한국: "KR",
   미국: "US",
   일본: "JP",
-  글로벌: "",
+  글로벌: "KR", // 기본값
 };
 
-/* ---------- Keyword Extraction ---------- */
+/* ---------- Keyword/Tag Extraction ---------- */
 
-function extractKeywords(titles: string[]): Map<string, number> {
-  const freq = new Map<string, number>();
-  // Korean noun-like pattern: 2+ character sequences of Korean or alphanumeric
-  const pattern = /[가-힣]{2,}|[A-Za-z]{3,}[A-Za-z0-9]*/g;
+interface VideoData {
+  title: string;
+  tags: string[];
+  publishedAt: string;
+  views: number;
+  likes: number;
+}
 
-  const stopWords = new Set([
-    "이것", "저것", "그것", "하는", "있는", "없는", "되는", "인데",
-    "에서", "으로", "한다", "이다", "니다", "습니다", "입니다",
-    "영상", "구독", "좋아요", "알림", "설정", "채널", "오늘",
-    "지금", "정말", "진짜", "너무", "완전", "바로", "시작",
-  ]);
+const STOP_WORDS = new Set([
+  // Korean
+  "이것", "저것", "그것", "하는", "있는", "없는", "되는", "인데",
+  "에서", "으로", "한다", "이다", "니다", "습니다", "입니다",
+  "영상", "구독", "좋아요", "알림", "설정", "채널", "오늘",
+  "지금", "정말", "진짜", "너무", "완전", "바로", "시작",
+  "해보", "해봤", "됩니다", "했습니다", "리뷰", "추천",
+  "드디어", "대박", "최초", "공개", "이번", "최신",
+  // English
+  "the", "and", "for", "with", "this", "that", "from",
+  "official", "video", "music", "shorts", "live",
+]);
 
-  for (const title of titles) {
-    const matches = title.match(pattern) || [];
-    for (const word of matches) {
-      if (stopWords.has(word)) continue;
-      freq.set(word, (freq.get(word) || 0) + 1);
+interface KeywordInfo {
+  count: number;         // 등장 영상 수
+  totalViews: number;    // 키워드 포함 영상들의 총 조회수
+  totalLikes: number;    // 키워드 포함 영상들의 총 좋아요
+  avgVelocity: number;   // 평균 조회 속도 (views/hour)
+  publishDates: number[]; // 게시일 timestamps
+}
+
+function extractKeywordsFromVideos(videos: VideoData[]): Map<string, KeywordInfo> {
+  const result = new Map<string, KeywordInfo>();
+  const titlePattern = /[가-힣]{2,}|[A-Za-z]{3,}[A-Za-z0-9]*/g;
+  const now = Date.now();
+
+  for (const video of videos) {
+    const hoursSincePublish = Math.max(1, (now - new Date(video.publishedAt).getTime()) / 3600000);
+    const velocity = video.views / hoursSincePublish;
+    const publishTime = new Date(video.publishedAt).getTime();
+
+    // 태그에서 키워드 추출 (더 정확한 신호)
+    const keywords = new Set<string>();
+    for (const tag of video.tags) {
+      const lower = tag.toLowerCase().trim();
+      if (lower.length >= 2 && !STOP_WORDS.has(lower)) {
+        keywords.add(lower);
+      }
+    }
+
+    // 제목에서 추가 키워드 추출
+    const titleMatches = video.title.match(titlePattern) || [];
+    for (const word of titleMatches) {
+      const lower = word.toLowerCase();
+      if (!STOP_WORDS.has(lower)) {
+        keywords.add(lower);
+      }
+    }
+
+    // 각 키워드에 영상 데이터 집계
+    for (const keyword of keywords) {
+      const info = result.get(keyword) || {
+        count: 0,
+        totalViews: 0,
+        totalLikes: 0,
+        avgVelocity: 0,
+        publishDates: [],
+      };
+      info.count++;
+      info.totalViews += video.views;
+      info.totalLikes += video.likes;
+      info.avgVelocity += velocity;
+      info.publishDates.push(publishTime);
+      result.set(keyword, info);
     }
   }
 
-  return freq;
+  // 평균 velocity 계산
+  for (const [, info] of result) {
+    info.avgVelocity = info.count > 0 ? info.avgVelocity / info.count : 0;
+  }
+
+  return result;
 }
 
 /* ---------- Competition Level ---------- */
 
 function getCompetitionLevel(videoCount: number): "높음" | "중간" | "낮음" {
-  if (videoCount > 500) return "높음";
-  if (videoCount > 100) return "중간";
+  if (videoCount > 500000) return "높음";
+  if (videoCount > 50000) return "중간";
   return "낮음";
 }
 
-/* ---------- Mock Fallback ---------- */
+/* ---------- Timeline from real dates ---------- */
 
-function getMockData(category: string): TrendSurfingResponse {
-  const trendingKeywords: TrendingKeyword[] = [
-    { rank: 1, keyword: "AI 에이전트", videoCount: 234, growth: 156, competition: "높음" },
-    { rank: 2, keyword: "클로드 코드", videoCount: 89, growth: 340, competition: "낮음" },
-    { rank: 3, keyword: "MCP 서버", videoCount: 156, growth: 220, competition: "중간" },
-    { rank: 4, keyword: "바이브 코딩", videoCount: 67, growth: 480, competition: "낮음" },
-    { rank: 5, keyword: "GPT-5 출시", videoCount: 445, growth: 190, competition: "높음" },
-    { rank: 6, keyword: "유튜브 쇼츠", videoCount: 312, growth: 85, competition: "높음" },
-    { rank: 7, keyword: "프롬프트 엔지니어링", videoCount: 178, growth: 130, competition: "중간" },
-    { rank: 8, keyword: "노코드 앱", videoCount: 95, growth: 260, competition: "낮음" },
-    { rank: 9, keyword: "디지털 노마드", videoCount: 201, growth: 75, competition: "중간" },
-    { rank: 10, keyword: "사이드 프로젝트", videoCount: 143, growth: 110, competition: "중간" },
-  ];
+function buildTimeline(dates: number[]): TrendTimelinePoint[] {
+  const now = Date.now();
+  const buckets = new Array(7).fill(0);
 
-  const blueOceanKeywords: BlueOceanKeyword[] = [
-    { keyword: "MCP 서버 만들기", searchVolume: 12000, videoCount: 23, opportunityScore: 92 },
-    { keyword: "클로드 자동화", searchVolume: 8500, videoCount: 15, opportunityScore: 89 },
-    { keyword: "AI 워크플로우", searchVolume: 15000, videoCount: 45, opportunityScore: 85 },
-    { keyword: "로컬 LLM 설치", searchVolume: 9200, videoCount: 31, opportunityScore: 82 },
-    { keyword: "Cursor 단축키", searchVolume: 7800, videoCount: 19, opportunityScore: 81 },
-    { keyword: "RAG 구현 방법", searchVolume: 11000, videoCount: 52, opportunityScore: 76 },
-    { keyword: "AI 음악 생성", searchVolume: 18000, videoCount: 89, opportunityScore: 73 },
-    { keyword: "벡터 데이터베이스", searchVolume: 6500, videoCount: 28, opportunityScore: 71 },
-    { keyword: "파인튜닝 가이드", searchVolume: 5800, videoCount: 34, opportunityScore: 65 },
-    { keyword: "AI 에이전트 프레임워크", searchVolume: 4200, videoCount: 41, opportunityScore: 58 },
-  ];
-
-  // Adjust for category
-  if (category === "엔터") {
-    trendingKeywords[0] = { rank: 1, keyword: "아이돌 컴백", videoCount: 567, growth: 320, competition: "높음" };
-    trendingKeywords[1] = { rank: 2, keyword: "드라마 리뷰", videoCount: 234, growth: 180, competition: "중간" };
-    blueOceanKeywords[0] = { keyword: "신인 아이돌 직캠", searchVolume: 9500, videoCount: 18, opportunityScore: 94 };
-  } else if (category === "게임") {
-    trendingKeywords[0] = { rank: 1, keyword: "발로란트 시즌", videoCount: 389, growth: 250, competition: "높음" };
-    trendingKeywords[1] = { rank: 2, keyword: "인디 게임 추천", videoCount: 123, growth: 190, competition: "중간" };
-    blueOceanKeywords[0] = { keyword: "스팀 할인 꿀팁", searchVolume: 14000, videoCount: 25, opportunityScore: 91 };
+  for (const ts of dates) {
+    const daysAgo = Math.floor((now - ts) / 86400000);
+    if (daysAgo >= 0 && daysAgo < 7) {
+      buckets[6 - daysAgo]++;
+    }
   }
 
-  const timeline: Record<string, TrendTimelinePoint[]> = {};
-  for (const kw of [...trendingKeywords, ...blueOceanKeywords].slice(0, 5)) {
-    const key = "keyword" in kw ? kw.keyword : "";
-    const base = Math.random() * 50 + 20;
-    timeline[key] = Array.from({ length: 7 }, (_, i) => ({
-      day: `${7 - i}일 전`,
-      value: Math.round(base + Math.random() * 40 * (i + 1)),
-    })).reverse();
-  }
-
-  return { trendingKeywords, blueOceanKeywords, timeline };
+  return buckets.map((value, i) => ({
+    day: i === 6 ? "오늘" : `${6 - i}일 전`,
+    value,
+  }));
 }
 
 /* ---------- Route Handler ---------- */
@@ -144,130 +177,238 @@ export async function POST(request: NextRequest) {
     const category: string = body.category || "전체";
     const region: string = body.region || "한국";
 
-    let response: TrendSurfingResponse;
-
-    try {
-      const queries = categoryQueries[category] || categoryQueries["전체"];
-      const regionCode = regionCodes[region] || "KR";
-
-      // Search for recent popular videos using category queries
-      const searchPromises = queries.slice(0, 3).map((q) =>
-        youtubeClient.searchVideos(q, 50).catch(() => ({ items: [], pageInfo: { totalResults: 0 } }))
-      );
-
-      const searchResults = await Promise.all(searchPromises);
-      const allVideoItems = searchResults.flatMap((r) => r.items || []);
-
-      if (allVideoItems.length === 0) {
-        throw new Error("No results");
-      }
-
-      // Get video IDs for detailed stats
-      const videoIds = allVideoItems
-        .map((item) => item.id.videoId)
-        .filter((id): id is string => !!id)
-        .slice(0, 50);
-
-      // Get video details with view counts
-      const videoDetails = videoIds.length > 0
-        ? await youtubeClient.getVideoDetails(videoIds).catch(() => ({ items: [] }))
-        : { items: [] };
-
-      // Extract keywords from titles
-      const titles = allVideoItems.map((item) => item.snippet.title);
-      const keywordFreq = extractKeywords(titles);
-
-      // Build video count map from search results
-      const keywordVideoCounts = new Map<string, number>();
-      const keywordGrowth = new Map<string, number>();
-
-      // Sort keywords by frequency
-      const sortedKeywords = [...keywordFreq.entries()]
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 20);
-
-      // For top keywords, estimate video counts and growth
-      for (const [keyword] of sortedKeywords) {
-        try {
-          const params: Record<string, string> = {
-            q: keyword,
-            type: "video",
-            maxResults: "1",
-          };
-          if (regionCode) params.regionCode = regionCode;
-
-          const searchResult = await youtubeClient.searchVideos(keyword, 1);
-          keywordVideoCounts.set(keyword, searchResult.pageInfo?.totalResults || 0);
-
-          // Estimate growth based on frequency in recent results
-          const freq = keywordFreq.get(keyword) || 1;
-          keywordGrowth.set(keyword, Math.round(freq * 30 + Math.random() * 50));
-        } catch {
-          keywordVideoCounts.set(keyword, Math.round(Math.random() * 500));
-          keywordGrowth.set(keyword, Math.round(Math.random() * 200));
-        }
-      }
-
-      // Build trending keywords
-      const trendingKeywords: TrendingKeyword[] = sortedKeywords
-        .slice(0, 10)
-        .map(([keyword], index) => {
-          const videoCount = keywordVideoCounts.get(keyword) || 0;
-          return {
-            rank: index + 1,
-            keyword,
-            videoCount,
-            growth: keywordGrowth.get(keyword) || 0,
-            competition: getCompetitionLevel(videoCount),
-          };
-        });
-
-      // Build blue ocean keywords: frequent in searches but low video count
-      const blueOceanCandidates = sortedKeywords
-        .map(([keyword, freq]) => {
-          const videoCount = keywordVideoCounts.get(keyword) || 0;
-          const searchVolume = freq * 2000 + Math.round(Math.random() * 5000);
-          // Opportunity = high search volume relative to video count
-          const opportunityScore = Math.min(
-            100,
-            Math.round(
-              (searchVolume / Math.max(1, videoCount * 100)) * 30 +
-                (videoCount < 50 ? 30 : videoCount < 200 ? 15 : 0) +
-                Math.min(20, freq * 5)
-            )
-          );
-          return { keyword, searchVolume, videoCount, opportunityScore };
-        })
-        .sort((a, b) => b.opportunityScore - a.opportunityScore)
-        .slice(0, 10);
-
-      // Build timeline (simplified: use video publish dates)
-      const timeline: Record<string, TrendTimelinePoint[]> = {};
-      for (const kw of [...trendingKeywords, ...blueOceanCandidates].slice(0, 5)) {
-        const base = keywordFreq.get(kw.keyword) || 1;
-        timeline[kw.keyword] = Array.from({ length: 7 }, (_, i) => ({
-          day: `${7 - i}일 전`,
-          value: Math.round(base * (10 + i * 8) + Math.random() * 20),
-        })).reverse();
-      }
-
-      response = {
-        trendingKeywords,
-        blueOceanKeywords: blueOceanCandidates,
-        timeline,
-      };
-    } catch {
-      // Mock fallback
-      response = getMockData(category);
+    // 캐시 확인 (30분)
+    const cacheKey = `trend-surfing:v3:${category}:${region}`;
+    const cached = await cache.get<TrendSurfingResponse>(cacheKey);
+    if (cached) {
+      return NextResponse.json({ data: cached });
     }
 
+    const regionCode = regionCodeMap[region] || "KR";
+    const categoryId = categoryIdMap[category] || "";
+
+    // ═══ Phase 1: 실제 트렌딩 영상 수집 ═══
+    // 두 가지 소스를 결합: 인기급상승 + 최신 인기
+
+    const videoDataList: VideoData[] = [];
+
+    // 1-A: YouTube 인기 급상승 (mostPopular chart) — 실제 트렌드의 핵심
+    type VideoItem = { id: string; snippet: { title: string; publishedAt: string; tags?: string[] }; statistics: { viewCount: string; likeCount: string; commentCount: string }; contentDetails: { duration: string } };
+    const emptyVideos = { items: [] as VideoItem[] };
+
+    const trendingPromise = youtubeClient
+      .getTrendingVideos(regionCode, categoryId || undefined, 50)
+      .catch(() => emptyVideos);
+
+    // 1-B: 카테고리별 최신 영상 (order: date) — 떠오르는 신흥 트렌드
+    let emergingPromise: ReturnType<typeof youtubeClient.searchVideos>;
+
+    if (categoryId) {
+      emergingPromise = youtubeClient
+        .searchVideosByCategory(categoryId, 50, "date", regionCode)
+        .catch(() => ({ items: [], pageInfo: { totalResults: 0 } }));
+    } else {
+      // 전체 카테고리: 최신 인기 영상 검색
+      emergingPromise = youtubeClient
+        .searchVideos("trending", 50)
+        .catch(() => ({ items: [], pageInfo: { totalResults: 0 } }));
+    }
+
+    // 보조: 음식 등 Howto에 겹치는 카테고리는 키워드 검색 보완
+    const fallbackQueries = categoryFallbackQueries[category] || [];
+    type SearchItem = { id: { videoId?: string }; snippet: { title: string; channelId: string; publishedAt: string } };
+    const emptySearch = { items: [] as SearchItem[], pageInfo: { totalResults: 0 } };
+    const fallbackPromises = fallbackQueries.slice(0, 2).map((q) =>
+      youtubeClient.searchVideos(q, 25).catch(() => emptySearch)
+    );
+
+    const [trendingResult, emergingResult, ...fallbackResults] = await Promise.all([
+      trendingPromise,
+      emergingPromise,
+      ...fallbackPromises,
+    ]);
+
+    // ═══ Phase 2: 영상 상세 데이터 통합 ═══
+
+    // 트렌딩 영상은 이미 상세 데이터 포함
+    for (const v of trendingResult.items) {
+      videoDataList.push({
+        title: v.snippet.title,
+        tags: v.snippet.tags || [],
+        publishedAt: v.snippet.publishedAt,
+        views: parseInt(v.statistics.viewCount) || 0,
+        likes: parseInt(v.statistics.likeCount) || 0,
+      });
+    }
+
+    // 최신 영상 + 보조 영상의 상세 정보 가져오기
+    const emergingIds = new Set<string>();
+    for (const item of emergingResult.items) {
+      const vid = item.id.videoId;
+      if (vid) emergingIds.add(vid);
+    }
+    for (const result of fallbackResults) {
+      for (const item of result.items) {
+        const vid = item.id.videoId;
+        if (vid) emergingIds.add(vid);
+      }
+    }
+
+    // 이미 있는 트렌딩 영상 ID 제외
+    const existingIds = new Set(trendingResult.items.map((v) => v.id));
+    const newIds = [...emergingIds].filter((id) => !existingIds.has(id)).slice(0, 50);
+
+    if (newIds.length > 0) {
+      try {
+        const emergingDetails = await youtubeClient.getVideoDetails(newIds);
+        for (const v of emergingDetails.items) {
+          videoDataList.push({
+            title: v.snippet.title,
+            tags: v.snippet.tags || [],
+            publishedAt: v.snippet.publishedAt,
+            views: parseInt(v.statistics.viewCount) || 0,
+            likes: parseInt(v.statistics.likeCount) || 0,
+          });
+        }
+      } catch {
+        // 상세 조회 실패 시 기본 정보만 사용
+      }
+    }
+
+    if (videoDataList.length === 0) {
+      return NextResponse.json({
+        data: { trendingKeywords: [], blueOceanKeywords: [], timeline: {} },
+      });
+    }
+
+    // ═══ Phase 3: 키워드 추출 + 조회 속도 분석 ═══
+
+    const keywordMap = extractKeywordsFromVideos(videoDataList);
+
+    // 최소 2회 이상 등장한 키워드만 (노이즈 제거)
+    const qualifiedKeywords = [...keywordMap.entries()]
+      .filter(([, info]) => info.count >= 2)
+      .sort((a, b) => {
+        // 조회속도 × 등장빈도 복합 점수로 정렬
+        const scoreA = a[1].avgVelocity * Math.log2(a[1].count + 1);
+        const scoreB = b[1].avgVelocity * Math.log2(b[1].count + 1);
+        return scoreB - scoreA;
+      })
+      .slice(0, 25);
+
+    // ═══ Phase 4: 경쟁도 조회 (상위 12개만 API 호출) ═══
+
+    const videoCountMap = new Map<string, number>();
+
+    const countPromises = qualifiedKeywords.slice(0, 12).map(async ([keyword]) => {
+      try {
+        const result = await youtubeClient.searchVideos(keyword, 1);
+        videoCountMap.set(keyword, result.pageInfo?.totalResults || 0);
+      } catch {
+        videoCountMap.set(keyword, 0);
+      }
+    });
+
+    await Promise.allSettled(countPromises);
+
+    // 나머지는 추정
+    for (const [keyword, info] of qualifiedKeywords) {
+      if (!videoCountMap.has(keyword)) {
+        videoCountMap.set(keyword, info.count * 10000);
+      }
+    }
+
+    // ═══ Phase 5: 전체 평균 조회 속도 (기준선) ═══
+
+    const allVelocities = videoDataList.map((v) => {
+      const hours = Math.max(1, (Date.now() - new Date(v.publishedAt).getTime()) / 3600000);
+      return v.views / hours;
+    });
+    const avgVelocity = allVelocities.length > 0
+      ? allVelocities.reduce((a, b) => a + b, 0) / allVelocities.length
+      : 1;
+
+    // ═══ Phase 6: 트렌딩 키워드 구성 ═══
+    // 성장 지수 = 해당 키워드의 평균 조회속도 / 전체 평균 조회속도 × 100
+
+    const trendingKeywords: TrendingKeyword[] = qualifiedKeywords
+      .slice(0, 10)
+      .map(([keyword, info], index) => {
+        const videoCount = videoCountMap.get(keyword) || 0;
+        const growth = Math.round((info.avgVelocity / Math.max(avgVelocity, 1)) * 100);
+
+        return {
+          rank: index + 1,
+          keyword,
+          videoCount,
+          growth: Math.max(0, growth),
+          competition: getCompetitionLevel(videoCount),
+        };
+      });
+
+    // ═══ Phase 7: 블루오션 키워드 ═══
+    // 높은 조회속도(수요) + 낮은 totalResults(공급) = 높은 기회
+
+    const blueOceanCandidates: BlueOceanKeyword[] = qualifiedKeywords
+      .map(([keyword, info]) => {
+        const videoCount = videoCountMap.get(keyword) || 0;
+
+        // 추정 검색량: 키워드 포함 영상의 총 조회수 기반
+        const searchVolume = Math.round(info.totalViews * 0.05 + info.count * 500);
+
+        // 기회 점수 3요소:
+        // 1. 수요 (30점): 평균 조회속도가 높을수록
+        const demandScore = Math.min(30, Math.round(
+          (info.avgVelocity / Math.max(avgVelocity, 1)) * 15
+        ));
+
+        // 2. 공급 부족 (40점): totalResults가 적을수록
+        const supplyScore = videoCount < 5000 ? 40
+          : videoCount < 20000 ? 30
+          : videoCount < 100000 ? 20
+          : videoCount < 500000 ? 10
+          : 5;
+
+        // 3. 참여도 (30점): 좋아요/조회수 비율
+        const engagementRate = info.totalViews > 0
+          ? info.totalLikes / info.totalViews
+          : 0;
+        const engagementScore = Math.min(30, Math.round(engagementRate * 600));
+
+        const opportunityScore = Math.min(100, demandScore + supplyScore + engagementScore);
+
+        return { keyword, searchVolume, videoCount, opportunityScore };
+      })
+      .sort((a, b) => b.opportunityScore - a.opportunityScore)
+      .slice(0, 10);
+
+    // ═══ Phase 8: 타임라인 — 실제 게시일 기반 7일 분포 ═══
+
+    const timeline: Record<string, TrendTimelinePoint[]> = {};
+    for (const kw of [...trendingKeywords, ...blueOceanCandidates].slice(0, 5)) {
+      const info = keywordMap.get(kw.keyword);
+      if (info) {
+        timeline[kw.keyword] = buildTimeline(info.publishDates);
+      }
+    }
+
+    const response: TrendSurfingResponse = {
+      trendingKeywords,
+      blueOceanKeywords: blueOceanCandidates,
+      timeline,
+    };
+
+    // 캐시 저장 (30분)
+    await cache.set(cacheKey, response, 1800);
+
     return NextResponse.json({ data: response });
-  } catch {
+  } catch (err) {
+    console.error("Trend surfing error:", err);
     return NextResponse.json(
       {
         error: {
           code: "INTERNAL_ERROR",
-          message: "서버 오류가 발생했습니다",
+          message: "트렌드 분석 중 오류가 발생했습니다",
         },
       },
       { status: 500 }

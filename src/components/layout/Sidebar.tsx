@@ -171,7 +171,7 @@ export function Sidebar({
         className
       )}
     >
-      <ScrollArea className="flex-1 py-3">
+      <ScrollArea className="flex-1 min-h-0 py-3">
         <div className="flex flex-col gap-1">
           {menuSections.map((section, sectionIdx) => (
             <div key={section.title}>
@@ -228,7 +228,7 @@ export function SidebarContent() {
   const pathname = usePathname()
 
   return (
-    <ScrollArea className="flex-1 py-3">
+    <ScrollArea className="flex-1 min-h-0 py-3">
       <div className="flex flex-col gap-1">
         {menuSections.map((section, sectionIdx) => (
           <div key={section.title}>

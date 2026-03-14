@@ -14,6 +14,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { useFavoriteStore } from "@/stores/favoriteStore";
 import { useRecentStore } from "@/stores/recentStore";
+import { useAlertStore } from "@/stores/alertStore";
 
 interface QuickActionProps {
   href: string;
@@ -44,6 +45,7 @@ function QuickAction({ href, icon, label, description }: QuickActionProps) {
 export function DashboardSummary() {
   const favoriteCount = useFavoriteStore((s) => s.favorites.length);
   const recentCount = useRecentStore((s) => s.recentChannels.length);
+  const alertCount = useAlertStore((s) => s.alerts.length);
 
   return (
     <div className="space-y-5">
@@ -84,10 +86,8 @@ export function DashboardSummary() {
                 <TrendingUp className="h-4 w-4 text-emerald-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-slate-100">
-                  {favoriteCount > 0 ? Math.ceil(favoriteCount * 0.4) : 0}
-                </p>
-                <p className="text-xs text-slate-500">성장 중인 채널</p>
+                <p className="text-2xl font-bold text-slate-100">{favoriteCount}</p>
+                <p className="text-xs text-slate-500">즐겨찾기 채널</p>
               </div>
             </div>
           </CardContent>
@@ -100,9 +100,7 @@ export function DashboardSummary() {
                 <Bell className="h-4 w-4 text-amber-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-slate-100">
-                  {favoriteCount > 0 ? Math.ceil(favoriteCount * 0.3) : 0}
-                </p>
+                <p className="text-2xl font-bold text-slate-100">{alertCount}</p>
                 <p className="text-xs text-slate-500">새 알림</p>
               </div>
             </div>

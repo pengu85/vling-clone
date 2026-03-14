@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { youtubeClient } from "@/lib/youtube";
+import { parseChannelInput } from "@/lib/parseChannel";
 
 /* ---------- Types ---------- */
 
@@ -49,35 +50,6 @@ interface AlgorithmAnatomyResponse {
   algorithmFactors: AlgorithmScoreItem[];
 }
 
-/* ---------- 채널 입력 파싱 ---------- */
-
-function parseChannelInput(input: string): { type: "id" | "handle" | "search"; value: string } {
-  const trimmed = input.trim();
-
-  if (/^UC[\w-]{22}$/.test(trimmed)) {
-    return { type: "id", value: trimmed };
-  }
-
-  const urlPatterns = [
-    /youtube\.com\/channel\/(UC[\w-]{22})/,
-    /youtube\.com\/@([\w.-]+)/,
-    /youtube\.com\/c\/([\w.-]+)/,
-  ];
-  for (const pattern of urlPatterns) {
-    const match = trimmed.match(pattern);
-    if (match) {
-      if (match[1].startsWith("UC")) return { type: "id", value: match[1] };
-      return { type: "handle", value: match[1] };
-    }
-  }
-
-  if (trimmed.startsWith("@")) {
-    return { type: "handle", value: trimmed.slice(1) };
-  }
-
-  return { type: "search", value: trimmed };
-}
-
 /* ---------- 유입 경로 역추정 ---------- */
 
 function estimateTrafficSources(
@@ -117,8 +89,8 @@ function estimateTrafficSources(
   ) / videos.length;
   let browseScore = Math.min(30, engagementRate * 500);
 
-  // 외부 비중: 기본 10~15%
-  let externalScore = 10 + Math.random() * 5;
+  // 외부 비중: 기본 10~15% (결정적으로 영상 수 기반)
+  let externalScore = 10 + (videos.length % 5);
 
   // 정규화
   const total = searchScore + suggestedScore + browseScore + externalScore;
@@ -380,128 +352,6 @@ function calculateAlgorithmScore(
   };
 }
 
-/* ---------- 결정적 시드 Mock ---------- */
-
-function seededRandom(seed: number): number {
-  const x = Math.sin(seed) * 10000;
-  return x - Math.floor(x);
-}
-
-function generateMockResponse(channelInput: string): AlgorithmAnatomyResponse {
-  const seed = channelInput.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
-
-  const dayNames = ["월", "화", "수", "목", "금", "토", "일"];
-
-  // Traffic sources (deterministic)
-  const suggested = Math.round(25 + seededRandom(seed * 1) * 20);
-  const browse = Math.round(15 + seededRandom(seed * 2) * 15);
-  const search = Math.round(10 + seededRandom(seed * 3) * 20);
-  const external = Math.round(5 + seededRandom(seed * 4) * 10);
-  const totalRaw = suggested + browse + search + external;
-  const other = 100 - Math.round((suggested / totalRaw) * 100)
-    - Math.round((browse / totalRaw) * 100)
-    - Math.round((search / totalRaw) * 100)
-    - Math.round((external / totalRaw) * 100);
-
-  const trafficSources: TrafficSource[] = [
-    { name: "추천 영상", value: Math.round((suggested / totalRaw) * 100), color: "#3b82f6" },
-    { name: "탐색/홈", value: Math.round((browse / totalRaw) * 100), color: "#10b981" },
-    { name: "검색", value: Math.round((search / totalRaw) * 100), color: "#f59e0b" },
-    { name: "외부", value: Math.round((external / totalRaw) * 100), color: "#a855f7" },
-    { name: "기타", value: Math.max(0, other), color: "#64748b" },
-  ];
-
-  // Heatmap
-  const heatmap: HeatmapCell[] = [];
-  let maxIntensity = 0;
-  const rawValues: number[][] = [];
-
-  for (let d = 0; d < 7; d++) {
-    rawValues[d] = [];
-    for (let h = 0; h < 24; h++) {
-      // Peak hours: 18-22 KST, weekdays slightly better
-      const hourFactor = (h >= 18 && h <= 22) ? 1.0 : (h >= 14 && h <= 17) ? 0.6 : (h >= 10 && h <= 13) ? 0.4 : 0.15;
-      const dayFactor = (d >= 0 && d <= 4) ? 0.9 : 1.1; // weekends slightly higher
-      const val = Math.round(
-        (5000 + seededRandom(seed * 100 + d * 24 + h) * 50000) * hourFactor * dayFactor
-      );
-      rawValues[d][h] = val;
-      if (val > maxIntensity) maxIntensity = val;
-    }
-  }
-
-  const bestCells: { day: number; hour: number; avg: number }[] = [];
-  for (let d = 0; d < 7; d++) {
-    for (let h = 0; h < 24; h++) {
-      const intensity = maxIntensity > 0 ? rawValues[d][h] / maxIntensity : 0;
-      heatmap.push({
-        day: d,
-        hour: h,
-        avgViews: rawValues[d][h],
-        intensity,
-        isBest: false,
-      });
-      bestCells.push({ day: d, hour: h, avg: rawValues[d][h] });
-    }
-  }
-
-  bestCells.sort((a, b) => b.avg - a.avg);
-  const top3 = bestCells.slice(0, 3);
-  for (const bc of top3) {
-    heatmap[bc.day * 24 + bc.hour].isBest = true;
-  }
-
-  const bestTimes = top3.map((bc) => ({
-    day: dayNames[bc.day],
-    hour: bc.hour,
-  }));
-
-  // Keywords
-  const mockKeywords = [
-    "리뷰", "언박싱", "브이로그", "먹방", "여행", "일상",
-    "추천", "꿀팁", "대박", "신상", "비교", "테스트",
-  ];
-  const keywords: KeywordStat[] = mockKeywords
-    .slice(0, 10)
-    .map((kw, i) => {
-      const count = Math.round(3 + seededRandom(seed * 200 + i) * 12);
-      const avgViews = Math.round(10000 + seededRandom(seed * 300 + i) * 90000);
-      const performance: "high" | "medium" | "low" =
-        avgViews > 60000 ? "high" : avgViews > 30000 ? "medium" : "low";
-      return { keyword: kw, count, avgViews, performance };
-    })
-    .sort((a, b) => b.count - a.count);
-
-  // Upload pattern
-  const uploadPattern: UploadPatternDay[] = dayNames.map((day, i) => ({
-    day,
-    uploads: Math.round(1 + seededRandom(seed * 400 + i) * 4),
-    avgViews: Math.round(15000 + seededRandom(seed * 500 + i) * 60000),
-  }));
-
-  // Algorithm score
-  const algorithmScore = Math.round(40 + seededRandom(seed * 600) * 50);
-  const algorithmFactors: AlgorithmScoreItem[] = [
-    { label: "업로드 빈도", score: Math.round(8 + seededRandom(seed * 701) * 17), maxScore: 25 },
-    { label: "시청 유지율 추정", score: Math.round(5 + seededRandom(seed * 702) * 20), maxScore: 25 },
-    { label: "참여도", score: Math.round(6 + seededRandom(seed * 703) * 19), maxScore: 25 },
-    { label: "키워드 최적화", score: Math.round(7 + seededRandom(seed * 704) * 18), maxScore: 25 },
-  ];
-
-  return {
-    channelName: channelInput.startsWith("@") ? channelInput : `채널 ${channelInput.slice(0, 10)}`,
-    channelThumbnail: `https://placehold.co/176x176/1e293b/94a3b8?text=${encodeURIComponent(channelInput.slice(0, 2))}`,
-    subscribers: Math.round(10000 + seededRandom(seed * 10) * 990000),
-    trafficSources,
-    heatmap,
-    bestTimes,
-    keywords,
-    uploadPattern,
-    algorithmScore,
-    algorithmFactors,
-  };
-}
-
 /* ---------- API Route ---------- */
 
 export async function POST(request: NextRequest) {
@@ -518,8 +368,7 @@ export async function POST(request: NextRequest) {
 
     const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
     if (!YOUTUBE_API_KEY) {
-      const mockData = generateMockResponse(rawInput);
-      return NextResponse.json({ data: mockData });
+      return NextResponse.json({ error: { code: "API_KEY_REQUIRED", message: "YouTube API 키가 설정되지 않았습니다" } }, { status: 503 });
     }
 
     // Resolve channel ID

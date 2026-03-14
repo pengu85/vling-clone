@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import {
   AreaChart,
   Area,
@@ -23,30 +22,23 @@ interface GrowthChartProps {
   title?: string;
 }
 
-function seededRandom(seed: number): number {
-  const x = Math.sin(seed) * 10000;
-  return x - Math.floor(x);
-}
-
-function generateMockGrowthData(days: number): GrowthDataPoint[] {
-  const points: GrowthDataPoint[] = [];
-  const now = new Date();
-  for (let i = days - 1; i >= 0; i--) {
-    const date = new Date(now);
-    date.setDate(date.getDate() - i);
-    const rate = parseFloat(((seededRandom(days * 100 + i) - 0.4) * 6).toFixed(2));
-    points.push({
-      date: `${date.getMonth() + 1}/${date.getDate()}`,
-      rate,
-    });
-  }
-  return points;
-}
-
 export function GrowthChart({ data, title = "성장률 추이" }: GrowthChartProps) {
-  const chartData = useMemo(() => {
-    return data && data.length > 0 ? data : generateMockGrowthData(30);
-  }, [data]);
+  if (!data || data.length === 0) {
+    return (
+      <Card className="border-slate-800 bg-slate-800/60">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-slate-300">성장 추이</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-[200px] text-sm text-slate-500">
+            데이터가 충분하지 않습니다
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const chartData = data;
 
   return (
     <Card className="bg-slate-900 border-slate-800">

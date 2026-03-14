@@ -24,29 +24,6 @@ interface StatsChartProps {
   color?: string;
 }
 
-function seededRandom(seed: number): number {
-  const x = Math.sin(seed) * 10000;
-  return x - Math.floor(x);
-}
-
-function generateMockTrend(days: number, baseValue: number): DataPoint[] {
-  const points: DataPoint[] = [];
-  let current = baseValue;
-  const now = new Date();
-  for (let i = days - 1; i >= 0; i--) {
-    const date = new Date(now);
-    date.setDate(date.getDate() - i);
-    const seed = baseValue + i * 31;
-    const change = (seededRandom(seed) - 0.45) * current * 0.03;
-    current = Math.max(0, current + change);
-    points.push({
-      date: `${date.getMonth() + 1}/${date.getDate()}`,
-      value: Math.round(current),
-    });
-  }
-  return points;
-}
-
 function formatYAxis(value: number): string {
   if (value >= 100000000) return `${(value / 100000000).toFixed(0)}억`;
   if (value >= 10000) return `${(value / 10000).toFixed(0)}만`;
@@ -67,7 +44,7 @@ export function StatsChart({ data, title, color = "#6366f1" }: StatsChartProps) 
     if (data && data.length > 0) {
       return data.slice(-period);
     }
-    return generateMockTrend(period, 250000);
+    return [];
   }, [data, period]);
 
   return (
@@ -95,47 +72,53 @@ export function StatsChart({ data, title, color = "#6366f1" }: StatsChartProps) 
         </div>
       </CardHeader>
       <CardContent className="pt-0 px-1 sm:px-6">
-        <ResponsiveContainer width="100%" height={180}>
-          <LineChart
-            data={chartData}
-            margin={{ top: 4, right: 4, bottom: 0, left: -8 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-            <XAxis
-              dataKey="date"
-              tick={{ fontSize: 9, fill: "#94a3b8" }}
-              tickLine={false}
-              axisLine={false}
-              interval={Math.floor(chartData.length / 4)}
-            />
-            <YAxis
-              tickFormatter={formatYAxis}
-              tick={{ fontSize: 9, fill: "#94a3b8" }}
-              tickLine={false}
-              axisLine={false}
-              width={36}
-            />
-            <Tooltip
-              contentStyle={{
-                fontSize: 12,
-                borderRadius: 8,
-                border: "1px solid #334155",
-                backgroundColor: "#1e293b",
-                color: "#e2e8f0",
-                boxShadow: "0 4px 6px -1px rgba(0,0,0,0.4)",
-              }}
-              formatter={(value) => [formatYAxis(Number(value ?? 0)), title]}
-            />
-            <Line
-              type="monotone"
-              dataKey="value"
-              stroke={color}
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 4, fill: color }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        {chartData.length === 0 ? (
+          <div className="flex items-center justify-center h-[180px] text-sm text-slate-500">
+            데이터를 수집 중입니다
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={180}>
+            <LineChart
+              data={chartData}
+              margin={{ top: 4, right: 4, bottom: 0, left: -8 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+              <XAxis
+                dataKey="date"
+                tick={{ fontSize: 9, fill: "#94a3b8" }}
+                tickLine={false}
+                axisLine={false}
+                interval={Math.floor(chartData.length / 4)}
+              />
+              <YAxis
+                tickFormatter={formatYAxis}
+                tick={{ fontSize: 9, fill: "#94a3b8" }}
+                tickLine={false}
+                axisLine={false}
+                width={36}
+              />
+              <Tooltip
+                contentStyle={{
+                  fontSize: 12,
+                  borderRadius: 8,
+                  border: "1px solid #334155",
+                  backgroundColor: "#1e293b",
+                  color: "#e2e8f0",
+                  boxShadow: "0 4px 6px -1px rgba(0,0,0,0.4)",
+                }}
+                formatter={(value) => [formatYAxis(Number(value ?? 0)), title]}
+              />
+              <Line
+                type="monotone"
+                dataKey="value"
+                stroke={color}
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 4, fill: color }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
       </CardContent>
     </Card>
   );

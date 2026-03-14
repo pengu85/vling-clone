@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runAIInsight } from "@/lib/ai";
+import { requireAuth, checkRateLimit, getClientIp } from "@/lib/apiAuth";
 
 interface RouteParams {
   params: Promise<{ channelId: string }>;
 }
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
+  const authResult = await requireAuth();
+  if (!authResult.authorized) return authResult.response;
+
+  const rateLimited = checkRateLimit(getClientIp(request), { limit: 10, windowSeconds: 60 });
+  if (rateLimited) return rateLimited;
+
   const { channelId } = await params;
 
   if (!channelId || channelId.trim().length === 0) {

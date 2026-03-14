@@ -4,10 +4,11 @@ export interface RevenueInput {
   category: string;
 }
 
+// CPM in KRW (원화 기준)
 const CPM_BY_COUNTRY: Record<string, number> = {
-  US: 4.0, GB: 3.5, DE: 3.0, FR: 2.8, JP: 2.5,
-  KR: 2.0, TW: 1.8, BR: 1.5, TH: 1.0, VN: 0.8,
-  ID: 0.7, IN: 0.5, default: 1.5,
+  US: 5400, GB: 4700, DE: 4000, FR: 3800, JP: 3400,
+  KR: 2700, TW: 2400, BR: 2000, TH: 1350, VN: 1100,
+  ID: 950, IN: 680, default: 2000,
 };
 
 const CPM_MULTIPLIER_BY_CATEGORY: Record<string, number> = {
@@ -24,8 +25,13 @@ export function estimateMonthlyRevenue(input: RevenueInput): number {
   return Math.round((monthlyViews / 1000) * baseCPM * multiplier);
 }
 
+/**
+ * 예상 협찬 단가 (원화 KRW)
+ * 구독자 수와 참여율 기반 추정
+ */
 export function estimateAdPrice(subscriberCount: number, engagementRate: number): number {
-  const base = subscriberCount * 0.01;
-  const engagementMultiplier = 1 + (engagementRate - 2) * 0.1;
-  return Math.round(Math.max(base * engagementMultiplier, 50000));
+  // 구독자 1만명당 약 30~50만원 기본
+  const base = (subscriberCount / 10000) * 400000;
+  const engagementMultiplier = 1 + Math.max(0, (engagementRate - 2)) * 0.15;
+  return Math.round(Math.max(base * engagementMultiplier, 100000));
 }

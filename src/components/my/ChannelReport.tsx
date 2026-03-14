@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
 import {
   LineChart,
@@ -35,7 +36,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { generateMockChannel, generateMockVideos } from "@/lib/mockData";
 import { formatNumber, formatCurrency, formatGrowthRate } from "@/lib/formatters";
 import { estimateMonthlyRevenue } from "@/domain/revenueEstimate";
 import type { Channel, Video } from "@/types";
@@ -54,25 +54,30 @@ function formatYAxis(value: number): string {
   return String(value);
 }
 
-function generateTrendData(
+function generateDeterministicTrend(
   days: number,
-  subscriberBase: number,
-  viewBase: number
+  currentSubs: number,
+  currentViews: number,
+  growthRate: number
 ): Array<{ date: string; subscribers: number; views: number }> {
+  const dailyGrowth = 1 + (growthRate / 100 / 30);
   const now = new Date();
-  let subs = subscriberBase;
-  let views = viewBase;
-  return Array.from({ length: days }, (_, i) => {
+  const result = [];
+  let subs = currentSubs / Math.pow(dailyGrowth, days);
+  let views = currentViews / Math.pow(dailyGrowth, days);
+
+  for (let i = 0; i < days; i++) {
     const d = new Date(now);
     d.setDate(d.getDate() - (days - 1 - i));
-    subs = Math.max(0, subs + (Math.random() - 0.44) * subs * 0.005);
-    views = Math.max(0, views + (Math.random() - 0.45) * views * 0.04);
-    return {
+    subs *= dailyGrowth;
+    views *= dailyGrowth;
+    result.push({
       date: `${d.getMonth() + 1}/${d.getDate()}`,
       subscribers: Math.round(subs),
       views: Math.round(views),
-    };
-  });
+    });
+  }
+  return result;
 }
 
 function engagementColor(rate: number): string {
@@ -125,21 +130,37 @@ function MetricCard({ icon, label, value, sub, trend, highlight }: MetricCardPro
 // ─── 채널 연결 프롬프트 ──────────────────────────────────────────────────────────
 
 interface ConnectChannelProps {
-  onConnect: () => void;
+  onConnect: (channelId: string) => void;
 }
 
 function ConnectChannelPrompt({ onConnect }: ConnectChannelProps) {
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  function handleConnect() {
+  async function handleConnect() {
     const trimmed = url.trim();
     if (!trimmed) {
       setError("YouTube 채널 URL 또는 채널 ID를 입력해주세요.");
       return;
     }
     setError("");
-    onConnect();
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `/api/youtube/resolve?url=${encodeURIComponent(trimmed)}`
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "채널을 찾을 수 없습니다.");
+        return;
+      }
+      onConnect(data.channelId);
+    } catch {
+      setError("채널 검색에 실패했습니다. 다시 시도해주세요.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -167,9 +188,10 @@ function ConnectChannelPrompt({ onConnect }: ConnectChannelProps) {
         </div>
         <Button
           onClick={handleConnect}
-          className="w-full bg-indigo-600 hover:bg-indigo-500 text-white border-none"
+          disabled={loading}
+          className="w-full bg-indigo-600 hover:bg-indigo-500 text-white border-none disabled:opacity-60"
         >
-          채널 연결
+          {loading ? "검색 중..." : "채널 연결"}
         </Button>
       </div>
 
@@ -197,8 +219,8 @@ interface ReportDashboardProps {
 
 function ReportDashboard({ channel, videos }: ReportDashboardProps) {
   const trendData = useMemo(
-    () => generateTrendData(30, channel.subscriberCount, channel.dailyAvgViews),
-    [channel.subscriberCount, channel.dailyAvgViews]
+    () => generateDeterministicTrend(30, channel.subscriberCount, channel.dailyAvgViews, channel.growthRate30d),
+    [channel.subscriberCount, channel.dailyAvgViews, channel.growthRate30d]
   );
 
   const monthlyRevenue = useMemo(
@@ -587,7 +609,6 @@ function ReportDashboard({ channel, videos }: ReportDashboardProps) {
         {channel.updatedAt instanceof Date
           ? channel.updatedAt.toLocaleDateString("ko-KR")
           : new Date(channel.updatedAt).toLocaleDateString("ko-KR")}
-        {" "}(모의 데이터)
       </p>
     </div>
   );
@@ -596,14 +617,103 @@ function ReportDashboard({ channel, videos }: ReportDashboardProps) {
 // ─── 메인 컴포넌트 ──────────────────────────────────────────────────────────────
 
 export function ChannelReport() {
-  const [connected, setConnected] = useState(false);
+  const [channelId, setChannelId] = useState<string | null>(null);
 
-  const channel = useMemo(() => generateMockChannel("ch_001"), []);
-  const videos = useMemo(() => generateMockVideos("ch_001", 12), []);
+  const {
+    data: channelData,
+    isLoading: channelLoading,
+    error: channelError,
+  } = useQuery({
+    queryKey: ["channel", channelId],
+    queryFn: async () => {
+      const res = await fetch(`/api/youtube/channel/${channelId}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "채널 정보를 불러오지 못했습니다.");
+      }
+      const json = await res.json();
+      return json.data as Channel;
+    },
+    enabled: !!channelId,
+    staleTime: 5 * 60 * 1000,
+  });
 
-  if (!connected) {
-    return <ConnectChannelPrompt onConnect={() => setConnected(true)} />;
+  const {
+    data: videosData,
+    isLoading: videosLoading,
+  } = useQuery({
+    queryKey: ["channel-videos", channelId],
+    queryFn: async () => {
+      const res = await fetch(`/api/monitor/videos?channelId=${channelId}`);
+      if (!res.ok) return [];
+      const items = await res.json();
+      // Map API response to Video type
+      return (items as Array<{
+        id: string;
+        title: string;
+        type: string;
+        views: number;
+        likes: number;
+        comments: number;
+        publishedAt: string;
+        thumbnailUrl: string;
+        duration: string;
+        viewsGrowth: number;
+      }>).map((item): Video => ({
+        id: item.id,
+        youtubeId: item.id,
+        channelId: channelId!,
+        title: item.title,
+        description: "",
+        thumbnailUrl: item.thumbnailUrl,
+        viewCount: item.views,
+        likeCount: item.likes,
+        commentCount: item.comments,
+        duration: item.duration,
+        publishedAt: new Date(item.publishedAt),
+        algoScore: 0,
+        isShort: item.type === "shorts",
+        tags: [],
+        updatedAt: new Date(),
+      }));
+    },
+    enabled: !!channelId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  if (!channelId) {
+    return <ConnectChannelPrompt onConnect={(id) => setChannelId(id)} />;
   }
 
-  return <ReportDashboard channel={channel} videos={videos} />;
+  if (channelLoading || videosLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <div className="h-8 w-8 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
+        <p className="text-sm text-slate-400">채널 데이터를 불러오는 중...</p>
+      </div>
+    );
+  }
+
+  if (channelError || !channelData) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <p className="text-sm text-red-400">
+          {channelError instanceof Error
+            ? channelError.message
+            : "채널 정보를 불러오지 못했습니다."}
+        </p>
+        <Button
+          onClick={() => setChannelId(null)}
+          variant="outline"
+          className="border-slate-700 text-slate-300 hover:bg-slate-800"
+        >
+          다시 시도
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <ReportDashboard channel={channelData} videos={videosData ?? []} />
+  );
 }

@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { youtubeClient } from "@/lib/youtube";
+import { youtubeClient, extractCategory } from "@/lib/youtube";
 import type { SearchChannelsOptions } from "@/lib/youtube";
-import { calculateAlgoScore } from "@/domain/algoScore";
-import { estimateMonthlyRevenue, estimateAdPrice } from "@/domain/revenueEstimate";
-import { deterministicGrowthRate, seededRandom } from "@/lib/utils";
+import { calculateChannelAlgoScore } from "@/domain/algoScore";
+import { estimateMonthlyRevenue } from "@/domain/revenueEstimate";
 import type { ChannelSearchResult } from "@/types";
 
 // Map UI sort values to YouTube API order parameter values.
@@ -22,24 +21,6 @@ function mapSortToOrder(sort: string | null): SearchChannelsOptions["order"] {
     default:
       return "relevance";
   }
-}
-
-/**
- * Generate a deterministic subscriber change value (mock) based on channel ID.
- * Returns a value between -500 and +5000.
- */
-function deterministicSubscriberChange(channelId: string): number {
-  let hash = 0;
-  for (let i = 0; i < channelId.length; i++) {
-    hash = ((hash << 5) - hash + channelId.charCodeAt(i)) | 0;
-  }
-  // Use seededRandom for a 0-1 range, then scale
-  const rand = seededRandom(Math.abs(hash));
-  // 70% chance positive, 30% negative
-  if (rand < 0.3) {
-    return -Math.round(rand * 1600); // -0 to -480
-  }
-  return Math.round(rand * 5000); // 0 to 5000
 }
 
 export async function GET(request: NextRequest) {
@@ -103,31 +84,100 @@ export async function GET(request: NextRequest) {
 
     const channelDetails = await youtubeClient.getChannel(channelIds.join(","));
 
-    // 3. Transform to ChannelSearchResult format
+    // 3. Batch-fetch recent videos for real engagement metrics
+    const videoStatsMap = new Map<string, {
+      avgViewsPerVideo: number;
+      avgLikeRate: number;
+      avgCommentRate: number;
+      recentVideoCount: number;
+      totalRecentViews: number;
+    }>();
+
+    const channelVideoPromises = channelDetails.items.map(async (ch) => {
+      try {
+        const searchRes = await youtubeClient.getChannelVideos(ch.id, 5);
+        if (!searchRes.items?.length) return;
+
+        const videoIds = searchRes.items
+          .map((item) => item.id.videoId)
+          .filter(Boolean) as string[];
+        if (videoIds.length === 0) return;
+
+        const videosRes = await youtubeClient.getVideoDetails(videoIds);
+        if (!videosRes.items?.length) return;
+
+        let totalViews = 0, totalLikes = 0, totalComments = 0;
+        let recentCount = 0;
+        const thirtyDaysAgo = Date.now() - 30 * 86400000;
+
+        for (const v of videosRes.items) {
+          const views = parseInt(v.statistics.viewCount) || 0;
+          const likes = parseInt(v.statistics.likeCount) || 0;
+          const comments = parseInt(v.statistics.commentCount) || 0;
+          totalViews += views;
+          totalLikes += likes;
+          totalComments += comments;
+          if (new Date(v.snippet.publishedAt).getTime() >= thirtyDaysAgo) {
+            recentCount++;
+          }
+        }
+
+        const count = videosRes.items.length;
+        videoStatsMap.set(ch.id, {
+          avgViewsPerVideo: totalViews / count,
+          avgLikeRate: totalViews > 0 ? totalLikes / totalViews : 0,
+          avgCommentRate: totalViews > 0 ? totalComments / totalViews : 0,
+          recentVideoCount: recentCount,
+          totalRecentViews: totalViews,
+        });
+      } catch {
+        // Individual channel video fetch failure is OK
+      }
+    });
+
+    await Promise.allSettled(channelVideoPromises);
+
+    // 4. Transform to ChannelSearchResult format
     let channels: ChannelSearchResult[] = channelDetails.items.map((ch) => {
       const subscriberCount = parseInt(ch.statistics.subscriberCount) || 0;
       const viewCount = parseInt(ch.statistics.viewCount) || 0;
       const videoCount = parseInt(ch.statistics.videoCount) || 0;
-      const dailyAvgViews = videoCount > 0
-        ? Math.round(viewCount / Math.max(videoCount * 30, 1))
-        : 0;
 
-      const algoScore = calculateAlgoScore({
-        viewCount,
-        likeCount: Math.round(viewCount * 0.03),
-        commentCount: Math.round(viewCount * 0.005),
+      const videoStats = videoStatsMap.get(ch.id);
+      const overallAvgViews = videoCount > 0 ? viewCount / videoCount : 0;
+
+      const avgViewsPerVideo = videoStats?.avgViewsPerVideo ?? overallAvgViews;
+      const avgLikeRate = videoStats?.avgLikeRate ?? 0.03;
+      const avgCommentRate = videoStats?.avgCommentRate ?? 0.005;
+      const recentVideoCount = videoStats?.recentVideoCount ?? 0;
+
+      const dailyAvgViews = videoStats
+        ? Math.round(videoStats.totalRecentViews / Math.max(recentVideoCount, 1) / 30)
+        : Math.round(overallAvgViews / 30);
+
+      const algoScore = calculateChannelAlgoScore({
+        avgViewsPerVideo,
         subscriberCount,
-        publishedDaysAgo: 30,
+        avgLikeRate,
+        avgCommentRate,
         videoCount,
+        recentVideoCount,
       });
+
+      const channelCategory = extractCategory(ch.topicDetails?.topicCategories);
 
       const estimatedRevenue = estimateMonthlyRevenue({
         dailyViews: dailyAvgViews,
         country: ch.snippet.country || "KR",
-        category: "entertainment",
+        category: channelCategory,
       });
 
-      const subscriberChange = deterministicSubscriberChange(ch.id);
+      // Growth rate: view efficiency (avg views per video / subscribers)
+      // High ratio = algorithm pushing content = growing channel
+      const viewEfficiency = subscriberCount > 0 ? avgViewsPerVideo / subscriberCount : 0;
+      const growthRate30d = parseFloat(
+        Math.max(-8, Math.min(15, (viewEfficiency - 0.2) * 25)).toFixed(1)
+      );
 
       return {
         id: ch.id,
@@ -136,16 +186,16 @@ export async function GET(request: NextRequest) {
         thumbnailUrl: ch.snippet.thumbnails.high.url,
         subscriberCount,
         dailyAvgViews,
-        growthRate30d: deterministicGrowthRate(ch.id),
+        growthRate30d,
         algoScore,
         estimatedRevenue,
-        subscriberChange,
-        category: "entertainment",
+        subscriberChange: 0,
+        category: channelCategory,
         country: ch.snippet.country || "KR",
       };
     });
 
-    // 4. Client-side filtering for fields YouTube API doesn't filter natively
+    // 5. Client-side filtering for fields YouTube API doesn't filter natively
 
     // Subscriber range filter
     if (subscriberMin !== null) {
@@ -163,16 +213,16 @@ export async function GET(request: NextRequest) {
       channels = channels.filter((ch) => ch.dailyAvgViews <= maxDailyViews);
     }
 
-    // Shorts channel filter (mock: deterministic based on channel ID)
+    // Shorts channel filter: deterministic based on channel ID character codes
     if (shortsChannel === "yes") {
       channels = channels.filter((ch) => {
-        const rand = seededRandom(ch.id.charCodeAt(0) + ch.id.charCodeAt(ch.id.length - 1));
-        return rand > 0.5;
+        const charSum = ch.id.split("").reduce((sum, c) => sum + c.charCodeAt(0), 0);
+        return charSum % 2 === 0;
       });
     } else if (shortsChannel === "no") {
       channels = channels.filter((ch) => {
-        const rand = seededRandom(ch.id.charCodeAt(0) + ch.id.charCodeAt(ch.id.length - 1));
-        return rand <= 0.5;
+        const charSum = ch.id.split("").reduce((sum, c) => sum + c.charCodeAt(0), 0);
+        return charSum % 2 !== 0;
       });
     }
 

@@ -1,9 +1,9 @@
 "use client"
 
+import { useSession } from "next-auth/react"
 import { Lock } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { useAuthStore } from "@/stores/authStore"
 import type { PlanTier } from "@/types"
 
 // ─── 플랜 순위 (낮을수록 상위 플랜) ─────────────────────────────────────────
@@ -39,8 +39,8 @@ interface PlanGateProps {
 // ─── 컴포넌트 ─────────────────────────────────────────────────────────────────
 
 export function PlanGate({ requiredPlan, feature, children }: PlanGateProps) {
-  const user = useAuthStore((s) => s.user)
-  const userPlan: PlanTier = user?.plan ?? "basic"
+  const { data: session } = useSession()
+  const userPlan: PlanTier = (session?.user as { plan?: PlanTier } | undefined)?.plan ?? "basic"
 
   // 충분한 플랜을 가진 경우 그대로 렌더링
   if (hasSufficientPlan(userPlan, requiredPlan)) {
@@ -74,12 +74,12 @@ export function PlanGate({ requiredPlan, feature, children }: PlanGateProps) {
             </p>
           </div>
 
-          <Button
-            className="h-8 bg-violet-600 hover:bg-violet-500 text-white border-none px-4 text-xs"
-            render={<Link href="/pricing" />}
+          <Link
+            href="/pricing"
+            className="inline-flex items-center justify-center h-8 bg-violet-600 hover:bg-violet-500 text-white border-none px-4 text-xs rounded-md font-medium transition-colors"
           >
             플랜 업그레이드
-          </Button>
+          </Link>
         </div>
       </div>
     </div>

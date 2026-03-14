@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { youtubeClient } from "@/lib/youtube";
+import { requireAuth, checkRateLimit, getClientIp } from "@/lib/apiAuth";
+import { parseChannelInput } from "@/lib/parseChannel";
 
 // ── Types ──
 
@@ -27,106 +29,17 @@ interface ThumbnailAnalysisResponse {
   analysis: AnalysisResult;
 }
 
-// ── Mock fallback ──
-
-function getMockAnalysis(
-  thumbnails: { videoId: string; title: string; thumbnailUrl: string; views: number }[]
-): ThumbnailAnalysisResponse {
-  const highlights = [
-    ["밝은 색상", "큰 텍스트"],
-    ["강한 대비", "인물 클로즈업"],
-    ["노란색 배경", "표정 강조"],
-    ["깔끔한 구도", "텍스트 최소화"],
-    ["빨간색 포인트", "놀란 표정"],
-    ["그라데이션 배경", "화살표 그래픽"],
-    ["어두운 배경", "밝은 텍스트"],
-    ["분할 구도", "비교 이미지"],
-    ["파란색 톤", "아이콘 활용"],
-    ["미니멀 디자인", "큰 숫자"],
-    ["보라색 배경", "이모지 활용"],
-    ["초록색 포인트", "체크 마크"],
-  ];
-
-  const scored = thumbnails.map((t, i) => ({
-    ...t,
-    score: Math.floor(Math.random() * 35 + 60),
-    highlights: highlights[i % highlights.length],
-  }));
-
-  return {
-    thumbnails: scored,
-    analysis: {
-      colorPattern:
-        "밝은 노란색/빨간색 배경이 주를 이루며, 대비가 강한 편입니다.",
-      textPlacement:
-        "제목 텍스트가 좌상단에 2-3줄로 배치되어 있습니다.",
-      facialExpression:
-        "놀란 표정이 많으며, 조회수와 양의 상관관계를 보입니다.",
-      composition: "3분할 구도를 주로 사용합니다.",
-      summary:
-        "전반적으로 클릭을 유도하는 요소가 잘 갖춰져 있습니다.",
-      suggestions: [
-        "텍스트 크기를 20% 더 키우면 모바일에서 가독성이 향상됩니다.",
-        "배경과 인물 사이의 대비를 높이세요.",
-        "Shorts 썸네일은 세로 비율로 최적화하세요.",
-      ],
-    },
-  };
-}
-
 // ── Channel ID resolution ──
 
-function extractChannelIdentifier(input: string): {
-  type: "id" | "handle" | "url";
-  value: string;
-} {
-  const trimmed = input.trim();
-
-  // Direct channel ID (UC...)
-  if (/^UC[\w-]{22}$/.test(trimmed)) {
-    return { type: "id", value: trimmed };
-  }
-
-  // @handle
-  if (trimmed.startsWith("@")) {
-    return { type: "handle", value: trimmed };
-  }
-
-  // URL patterns
-  const channelIdMatch = trimmed.match(
-    /youtube\.com\/channel\/(UC[\w-]{22})/
-  );
-  if (channelIdMatch) {
-    return { type: "id", value: channelIdMatch[1] };
-  }
-
-  const handleMatch = trimmed.match(
-    /youtube\.com\/@([\w.-]+)/
-  );
-  if (handleMatch) {
-    return { type: "handle", value: `@${handleMatch[1]}` };
-  }
-
-  const customMatch = trimmed.match(
-    /youtube\.com\/c\/([\w.-]+)/
-  );
-  if (customMatch) {
-    return { type: "handle", value: customMatch[1] };
-  }
-
-  // Treat as handle/search term
-  return { type: "handle", value: trimmed };
-}
-
 async function resolveChannelId(input: string): Promise<string | null> {
-  const identifier = extractChannelIdentifier(input);
+  const parsed = parseChannelInput(input);
 
-  if (identifier.type === "id") {
-    return identifier.value;
+  if (parsed.type === "id") {
+    return parsed.value;
   }
 
   try {
-    return await youtubeClient.resolveHandle(identifier.value);
+    return await youtubeClient.resolveHandle(parsed.value);
   } catch {
     return null;
   }
@@ -135,6 +48,12 @@ async function resolveChannelId(input: string): Promise<string | null> {
 // ── Route handler ──
 
 export async function POST(request: NextRequest) {
+  const authResult = await requireAuth();
+  if (!authResult.authorized) return authResult.response;
+
+  const rateLimited = checkRateLimit(getClientIp(request), { limit: 10, windowSeconds: 60 });
+  if (rateLimited) return rateLimited;
+
   let body: { channelInput?: string; imageUrl?: string };
 
   try {
@@ -209,19 +128,11 @@ export async function POST(request: NextRequest) {
           }));
         }
       } catch {
-        // Fall through to mock
+        return NextResponse.json(
+          { error: { code: "YOUTUBE_API_ERROR", message: "YouTube API 데이터를 가져올 수 없습니다" } },
+          { status: 502 }
+        );
       }
-    }
-
-    // Mock fallback if no YouTube data
-    if (videoThumbnails.length === 0) {
-      const mockIds = Array.from({ length: 12 }, (_, i) => `mock_video_${i + 1}`);
-      videoThumbnails = mockIds.map((id, i) => ({
-        videoId: id,
-        title: `샘플 영상 ${i + 1}`,
-        thumbnailUrl: `https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg`,
-        views: Math.floor(Math.random() * 500000 + 10000),
-      }));
     }
   }
 
@@ -240,9 +151,10 @@ export async function POST(request: NextRequest) {
   // ── AI Analysis ──
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    // Mock fallback
-    await new Promise((r) => setTimeout(r, 800));
-    return NextResponse.json({ data: getMockAnalysis(videoThumbnails) });
+    return NextResponse.json(
+      { error: { code: "AI_UNAVAILABLE", message: "AI 분석 서비스를 사용할 수 없습니다" } },
+      { status: 503 }
+    );
   }
 
   const client = new Anthropic({ apiKey });
@@ -313,7 +225,7 @@ ${JSON.stringify(thumbnailSummary, null, 2)}
         const aiData = aiThumbnails.find((a) => a.index === i);
         return {
           ...t,
-          score: aiData?.score ?? Math.floor(Math.random() * 35 + 60),
+          score: aiData?.score ?? 50,
           highlights: aiData?.highlights ?? ["분석 중"],
         };
       }),
@@ -337,6 +249,9 @@ ${JSON.stringify(thumbnailSummary, null, 2)}
 
     return NextResponse.json({ data: result });
   } catch {
-    return NextResponse.json({ data: getMockAnalysis(videoThumbnails) });
+    return NextResponse.json(
+      { error: { code: "AI_UNAVAILABLE", message: "AI 분석 서비스를 사용할 수 없습니다" } },
+      { status: 503 }
+    );
   }
 }

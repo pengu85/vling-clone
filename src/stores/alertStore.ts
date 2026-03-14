@@ -34,84 +34,11 @@ interface AlertState {
   unreadCount: () => number;
 }
 
-// Mock alerts for demo
-const mockAlerts: Alert[] = [
-  {
-    id: "alert-1",
-    channelId: "UC_x5XG1OV2P6uZZ5FSM9Ttw",
-    channelTitle: "Google Developers",
-    type: "subscriber",
-    message: "구독자 수가 10,000명 증가하여 2,350,000명에 도달했습니다.",
-    timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-    read: false,
-  },
-  {
-    id: "alert-2",
-    channelId: "UCupvZG-5ko_eiXAupbDfxWw",
-    channelTitle: "CNN",
-    type: "view",
-    message: "최근 24시간 조회수가 500,000회를 돌파했습니다.",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    read: false,
-  },
-  {
-    id: "alert-3",
-    channelId: "UC-lHJZR3Gqxm24_Vd_AJ5Yw",
-    channelTitle: "PewDiePie",
-    type: "revenue",
-    message: "예상 월 수익이 $150,000를 초과했습니다.",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-    read: true,
-  },
-  {
-    id: "alert-4",
-    channelId: "UCq-Fj5jknLsUf-MWSy4_brA",
-    channelTitle: "T-Series",
-    type: "subscriber",
-    message: "구독자 수가 50,000명 증가하여 268,000,000명에 도달했습니다.",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
-    read: true,
-  },
-  {
-    id: "alert-5",
-    channelId: "UCX6OQ3DkcsbYNE6H8uQQuVA",
-    channelTitle: "MrBeast",
-    type: "view",
-    message: "최근 영상이 24시간 내 1,000만 조회수를 달성했습니다.",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-    read: false,
-  },
-];
-
-const mockRules: MonitorRule[] = [
-  {
-    channelId: "UC_x5XG1OV2P6uZZ5FSM9Ttw",
-    channelTitle: "Google Developers",
-    enabled: true,
-    subscriberThreshold: 10000,
-    viewThreshold: 500000,
-  },
-  {
-    channelId: "UCupvZG-5ko_eiXAupbDfxWw",
-    channelTitle: "CNN",
-    enabled: true,
-    subscriberThreshold: 5000,
-    viewThreshold: 300000,
-  },
-  {
-    channelId: "UCX6OQ3DkcsbYNE6H8uQQuVA",
-    channelTitle: "MrBeast",
-    enabled: false,
-    subscriberThreshold: 50000,
-    viewThreshold: 1000000,
-  },
-];
-
 export const useAlertStore = create<AlertState>()(
   persist(
     (set, get) => ({
-      alerts: mockAlerts,
-      rules: mockRules,
+      alerts: [],
+      rules: [],
 
       addAlert: (alert) =>
         set((state) => ({

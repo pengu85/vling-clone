@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
+import bcrypt from "bcryptjs"
+import crypto from "crypto"
 import { userStore } from "@/auth"
 import type { UserRole, PlanTier } from "@/types/channel"
 
@@ -32,11 +34,13 @@ export async function POST(request: Request) {
       )
     }
 
+    const hashedPassword = await bcrypt.hash(password, 10)
+
     const newUser = {
-      id: `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      id: `user_${crypto.randomUUID()}`,
       email: normalizedEmail,
       name,
-      passwordHash: password, // plain-text for demo; use bcrypt in production
+      passwordHash: hashedPassword,
       role: userType as UserRole,
       plan: "basic" as PlanTier,
       createdAt: new Date().toISOString(),

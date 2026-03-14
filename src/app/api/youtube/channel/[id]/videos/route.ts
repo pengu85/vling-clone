@@ -10,6 +10,12 @@ export async function GET(
   const { id } = await params;
 
   try {
+    // Get channel subscriber count for accurate algo score
+    const channelRes = await youtubeClient.getChannel(id);
+    const channelSubCount = channelRes.items?.[0]
+      ? parseInt(channelRes.items[0].statistics.subscriberCount) || 0
+      : 0;
+
     // 1. Get recent videos from channel
     const searchResult = await youtubeClient.getChannelVideos(id, 12);
 
@@ -64,7 +70,7 @@ export async function GET(
           viewCount,
           likeCount,
           commentCount,
-          subscriberCount: viewCount * 10,
+          subscriberCount: channelSubCount,
           publishedDaysAgo: daysAgo,
           videoCount: 1,
         }),

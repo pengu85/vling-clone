@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateMockRankings } from "@/lib/mockData";
-import { youtubeClient } from "@/lib/youtube";
+import { youtubeClient, extractCategory } from "@/lib/youtube";
 import { cache } from "@/lib/cache";
-import { calculateAlgoScore } from "@/domain/algoScore";
+import { calculateChannelAlgoScore } from "@/domain/algoScore";
 import { estimateMonthlyRevenue } from "@/domain/revenueEstimate";
 import type { ChannelSearchResult } from "@/types";
 import type { ChannelRanking } from "@/types/ranking";
@@ -87,6 +86,7 @@ async function fetchRealRankings(category: string): Promise<RankingEntry[]> {
     id: string;
     snippet: { title: string; description: string; thumbnails: { high: { url: string } }; country?: string };
     statistics: { subscriberCount: string; viewCount: string; videoCount: string };
+    topicDetails?: { topicCategories?: string[] };
   }> = [];
 
   for (let i = 0; i < channelIds.length; i += batchSize) {
@@ -110,29 +110,33 @@ async function fetchRealRankings(category: string): Promise<RankingEntry[]> {
     const totalViewCount = parseInt(item.statistics.viewCount ?? "0", 10) || 0;
     const videoCount = parseInt(item.statistics.videoCount ?? "0", 10) || 1;
     const country = item.snippet.country ?? "KR";
-    const category = guessCategory(item.snippet.title, item.snippet.description);
+    const category = item.topicDetails?.topicCategories
+      ? extractCategory(item.topicDetails.topicCategories)
+      : guessCategory(item.snippet.title, item.snippet.description);
 
     // Estimate daily average views: total views / max(videoCount * 7, 30) days
     const estimatedDays = Math.max(videoCount * 7, 30);
     const dailyAvgViews = Math.round(totalViewCount / estimatedDays);
 
-    // AlgoScore requires video-level data we don't have here; use channel-level proxy
-    const publishedDaysAgo = 180; // conservative estimate
-    const algoScore = calculateAlgoScore({
-      viewCount: dailyAvgViews * 7,
-      likeCount: Math.round(dailyAvgViews * 0.04),
-      commentCount: Math.round(dailyAvgViews * 0.005),
+    const avgViewsPerVideo = videoCount > 0 ? totalViewCount / videoCount : 0;
+    const algoScore = calculateChannelAlgoScore({
+      avgViewsPerVideo,
       subscriberCount,
-      publishedDaysAgo,
+      avgLikeRate: 0.035,   // estimated average
+      avgCommentRate: 0.005,
       videoCount,
+      recentVideoCount: Math.min(Math.round(videoCount / 30), 8),
     });
 
     const estimatedRevenue = estimateMonthlyRevenue({ dailyViews: dailyAvgViews, country, category });
 
-    // Growth rate: not available from basic API, use a small random proxy
-    // Seeded by subscriber count so it's deterministic per channel
-    const growthSeed = (subscriberCount % 100) / 100;
-    const growthRate30d = parseFloat(((growthSeed * 12) - 2).toFixed(1));
+    // Growth estimate: view efficiency (avg views per video / subscriber count)
+    // High ratio = algorithm pushing content beyond subscriber base = growing
+    // Normal ~0.15-0.3, viral >0.5, declining <0.1
+    const viewEfficiency = subscriberCount > 0 ? avgViewsPerVideo / subscriberCount : 0;
+    const growthRate30d = parseFloat(
+      Math.max(-8, Math.min(15, (viewEfficiency - 0.2) * 25)).toFixed(1)
+    );
 
     return {
       id: item.id,
@@ -242,18 +246,10 @@ export async function GET(request: NextRequest) {
     if (cached && cached.length > 0) {
       rankings = sortAndRank(cached, type);
     } else {
-      // Fallback: mock data
-      rankings = generateMockRankings(type, 100);
-      if (category !== "all") {
-        rankings = rankings.filter((r) => r.channel.category === category);
-      }
+      return NextResponse.json({ error: { code: "SERVICE_UNAVAILABLE", message: "YouTube API를 사용할 수 없습니다" } }, { status: 503 });
     }
   } else {
-    // No API key — use mock data
-    rankings = generateMockRankings(type, 100);
-    if (category !== "all") {
-      rankings = rankings.filter((r) => r.channel.category === category);
-    }
+    return NextResponse.json({ error: { code: "SERVICE_UNAVAILABLE", message: "YouTube API를 사용할 수 없습니다" } }, { status: 503 });
   }
 
   const total = rankings.length;

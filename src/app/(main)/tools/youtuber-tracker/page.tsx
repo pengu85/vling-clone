@@ -22,8 +22,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { useMonitorStore, type TrackedChannel } from "@/stores/monitorStore";
-import { generateVideoInsights } from "@/lib/monitorMockData";
+import { useMonitorStore } from "@/stores/monitorStore";
 import { formatNumber, formatGrowthRate } from "@/lib/formatters";
 import { CATEGORIES } from "@/domain/categories";
 
@@ -38,7 +37,7 @@ import {
 import { ChannelAddDialog } from "@/components/monitor/ChannelAddDialog";
 import { MonitoringHistory } from "@/components/monitor/MonitoringHistory";
 
-/* ---------- Mock stats ---------- */
+/* ---------- Stats ---------- */
 
 interface ChannelStats {
   channelId: string;
@@ -52,53 +51,10 @@ interface ChannelStats {
   updatedAt: string;
 }
 
-function generateMockStats(channelId: string): ChannelStats {
-  const seed = channelId.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  const rand = (min: number, max: number, offset = 0) => {
-    const x = Math.sin(seed + offset) * 10000;
-    const frac = x - Math.floor(x);
-    return Math.floor(frac * (max - min + 1)) + min;
-  };
-
-  return {
-    channelId,
-    subscribers: rand(10000, 5000000, 1),
-    subscriberDelta: rand(-500, 3000, 2),
-    dailyViews: rand(5000, 500000, 3),
-    viewsDelta: rand(-10000, 50000, 4),
-    algoScore: rand(30, 98, 5),
-    algoDelta: rand(-5, 8, 6),
-    growthRate: parseFloat((Math.sin(seed * 0.01) * 5 + 2).toFixed(1)),
-    updatedAt: new Date().toISOString(),
-  };
-}
-
-function generateSimilarChannels(channelId: string): SimilarChannel[] {
-  const seed = channelId.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  const names = [
-    "테크리뷰어",
-    "맛집탐방기",
-    "일상브이로그",
-    "게임마스터",
-    "뮤직스튜디오",
-    "여행의정석",
-  ];
-  const cats = [
-    "technology",
-    "food",
-    "entertainment",
-    "gaming",
-    "music",
-    "travel",
-  ];
-  return names.map((name, i) => ({
-    channelId: `similar_${seed}_${i}`,
-    title: name,
-    thumbnailUrl: "",
-    subscriberCount: Math.floor(Math.sin(seed + i * 7) * 500000 + 600000),
-    category: cats[i],
-    similarity: Math.floor(90 - i * 8),
-  }));
+async function fetchSimilarChannels(channelId: string): Promise<SimilarChannel[]> {
+  const res = await fetch(`/api/monitor/similar?channelId=${channelId}`);
+  if (!res.ok) return [];
+  return res.json();
 }
 
 /* ---------- Mobile Tab ---------- */
@@ -133,13 +89,19 @@ export default function YoutuberTrackerPage() {
 
   const filteredChannels = getFilteredChannels();
 
-  const statsMap = useMemo(() => {
-    const map: Record<string, ChannelStats> = {};
-    for (const ch of trackedChannels) {
-      map[ch.channelId] = generateMockStats(ch.channelId);
-    }
-    return map;
-  }, [trackedChannels]);
+  const channelIdList = trackedChannels.map((ch) => ch.channelId).join(",");
+
+  const { data: statsMap = {} } = useQuery<Record<string, ChannelStats>>({
+    queryKey: ["monitor-stats", channelIdList],
+    queryFn: async () => {
+      if (!channelIdList) return {};
+      const res = await fetch(`/api/monitor/stats?channelIds=${channelIdList}`);
+      if (!res.ok) return {};
+      return res.json();
+    },
+    enabled: trackedChannels.length > 0,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
   const summaryData = useMemo(() => {
     return filteredChannels.map((ch) => {
@@ -166,22 +128,18 @@ export default function YoutuberTrackerPage() {
       const res = await fetch(
         `/api/monitor/videos?channelId=${selectedChannelId}`
       );
-      const data = await res.json();
-      return data.length > 0
-        ? data
-        : generateVideoInsights(selectedChannelId!);
+      if (!res.ok) return [];
+      return res.json();
     },
     enabled: !!selectedChannelId,
     staleTime: 1000 * 60 * 30, // 30분
-    placeholderData: selectedChannelId
-      ? generateVideoInsights(selectedChannelId)
-      : [],
   });
-  const similarChannels = useMemo(
-    () =>
-      selectedChannelId ? generateSimilarChannels(selectedChannelId) : [],
-    [selectedChannelId]
-  );
+  const { data: similarChannels = [] } = useQuery({
+    queryKey: ["similar-channels", selectedChannelId],
+    queryFn: () => fetchSimilarChannels(selectedChannelId!),
+    enabled: !!selectedChannelId,
+    staleTime: 1000 * 60 * 60, // 1시간
+  });
 
   const chartData = useMemo(() => {
     return selectedHistory.map((h) => ({

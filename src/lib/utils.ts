@@ -17,11 +17,3 @@ export function deterministicGrowthRate(channelId: string): number {
   const normalized = (hash % 500) / 100; // -5.0 ~ 5.0 범위
   return parseFloat(normalized.toFixed(1));
 }
-
-/**
- * 정수 시드를 받아 [0, 1) 범위의 결정적 의사난수를 반환합니다.
- */
-export function seededRandom(seed: number): number {
-  const x = Math.sin(seed) * 10000;
-  return x - Math.floor(x);
-}

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { youtubeClient } from "@/lib/youtube";
+import { parseChannelInput } from "@/lib/parseChannel";
 
 /* ---------- Types ---------- */
 
@@ -32,6 +33,67 @@ interface DNAResponse {
   matches: MatchedChannel[];
 }
 
+/* ---------- Tag / Keyword Extraction ---------- */
+
+/**
+ * Extract top N most frequent tags from a list of videos.
+ */
+function extractTopTags(
+  videos: Array<{ tags?: string[] }>,
+  topN: number
+): string[] {
+  const freq = new Map<string, number>();
+  for (const v of videos) {
+    if (!v.tags) continue;
+    for (const tag of v.tags) {
+      const lower = tag.toLowerCase();
+      freq.set(lower, (freq.get(lower) || 0) + 1);
+    }
+  }
+  return [...freq.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, topN)
+    .map(([tag]) => tag);
+}
+
+/**
+ * Extract meaningful keywords from video titles.
+ * Filters out common stopwords and short words.
+ */
+function extractTitleKeywords(
+  videos: Array<{ title: string }>,
+  topN: number
+): string[] {
+  const stopwords = new Set([
+    "the", "a", "an", "is", "are", "and", "or", "in", "on", "at", "to", "for",
+    "of", "with", "by", "from", "ep", "episode", "part", "vol",
+    "의", "가", "이", "은", "들", "는", "에", "와", "을", "를", "으로",
+    "도", "한", "그", "저", "것", "수", "거", "좀", "잘", "더", "이번",
+    "영상", "채널", "오늘", "드디어", "진짜", "대박", "최초", "공개",
+  ]);
+
+  const freq = new Map<string, number>();
+  for (const v of videos) {
+    const words = v.title
+      .replace(/[^\w가-힣\s]/g, " ")
+      .split(/\s+/)
+      .filter((w) => w.length >= 2 && !stopwords.has(w.toLowerCase()));
+    const seen = new Set<string>();
+    for (const w of words) {
+      const lower = w.toLowerCase();
+      if (seen.has(lower)) continue;
+      seen.add(lower);
+      freq.set(lower, (freq.get(lower) || 0) + 1);
+    }
+  }
+
+  return [...freq.entries()]
+    .filter(([, count]) => count >= 2)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, topN)
+    .map(([keyword]) => keyword);
+}
+
 /* ---------- DNA 계산 ---------- */
 
 function calculateDNA(stats: {
@@ -43,38 +105,50 @@ function calculateDNA(stats: {
   avgComments: number;
   uploadIntervals: number[];
   channelAgeDays: number;
+  recentVideoCount: number;
 }): DNAScores {
-  // 콘텐츠력: 일 평균 업로드 빈도
-  const dailyUpload = stats.channelAgeDays > 0
-    ? stats.videoCount / stats.channelAgeDays
+  // 콘텐츠력: monthly upload rate (target: 8 videos/month = 100)
+  const monthlyUploads = stats.channelAgeDays > 0
+    ? (stats.videoCount / stats.channelAgeDays) * 30
     : 0;
-  const content = Math.min(100, Math.round(dailyUpload * 300));
+  const content = Math.min(100, Math.round((monthlyUploads / 8) * 80));
+  const recentBoost = Math.min(20, stats.recentVideoCount * 5);
+  const contentFinal = Math.min(100, content + recentBoost);
 
-  // 성장성: 구독자 대비 조회수 비율 (활성도)
-  const growthRate = stats.subscriberCount > 0
-    ? (stats.avgViews / stats.subscriberCount) * 100
+  // 성장성: view-to-subscriber ratio on log scale
+  // Ratio of 0.1 (10% of subs watch) = 50, ratio of 1.0 = 85, ratio of 0.01 = 20
+  const vpsRatio = stats.subscriberCount > 0
+    ? stats.avgViews / stats.subscriberCount
     : 0;
-  const growth = Math.min(100, Math.round(growthRate * 2));
+  const growth = Math.min(100, Math.round(50 + Math.log10(Math.max(vpsRatio, 0.001) / 0.1) * 25));
 
-  // 영향력: 평균 조회수 로그 스케일
-  const influence = Math.min(100, Math.round(Math.log10(Math.max(1, stats.avgViews)) * 15));
+  // 영향력: avg views on log scale (100 views=20, 10K=50, 100K=65, 1M=80, 10M=95)
+  const influence = Math.min(100, Math.round(Math.log10(Math.max(1, stats.avgViews)) * 16 - 10));
 
-  // 참여도: 좋아요/조회수 비율
+  // 참여도: combined like+comment rate
+  // Typical: 3% likes + 0.3% comments = 3.3%
+  // Scale: 2% = 40, 4% = 65, 8% = 85, 12%+ = 100
   const engagementRate = stats.avgViews > 0
-    ? (stats.avgLikes / stats.avgViews) * 1000
+    ? ((stats.avgLikes + stats.avgComments * 3) / stats.avgViews) * 100
     : 0;
-  const engagement = Math.min(100, Math.round(engagementRate));
+  const engagement = Math.min(100, Math.round(engagementRate * 12));
 
-  // 일관성: 업로드 간격의 일관성 (표준편차 역수)
+  // 일관성: coefficient of variation of upload intervals (lower = more consistent)
   let consistency = 50;
   if (stats.uploadIntervals.length > 1) {
     const mean = stats.uploadIntervals.reduce((a, b) => a + b, 0) / stats.uploadIntervals.length;
     const variance = stats.uploadIntervals.reduce((sum, v) => sum + (v - mean) ** 2, 0) / stats.uploadIntervals.length;
-    const cv = mean > 0 ? Math.sqrt(variance) / mean : 1; // coefficient of variation
-    consistency = Math.min(100, Math.round((1 - Math.min(cv, 1)) * 100));
+    const cv = mean > 0 ? Math.sqrt(variance) / mean : 1;
+    consistency = Math.min(100, Math.round((1 - Math.min(cv, 1)) * 90 + 10));
   }
 
-  return { content, growth, influence, engagement, consistency };
+  return {
+    content: Math.max(5, contentFinal),
+    growth: Math.max(5, growth),
+    influence: Math.max(5, influence),
+    engagement: Math.max(5, engagement),
+    consistency: Math.max(5, consistency),
+  };
 }
 
 function cosineSimilarity(a: DNAScores, b: DNAScores): number {
@@ -111,115 +185,6 @@ function getBenchmarkPoints(target: DNAScores, match: DNAScores): string[] {
   return points.slice(0, 3);
 }
 
-/* ---------- 채널 ID 파싱 ---------- */
-
-function parseChannelInput(input: string): { type: "id" | "handle" | "search"; value: string } {
-  const trimmed = input.trim();
-
-  // UC로 시작하는 채널 ID
-  if (/^UC[\w-]{22}$/.test(trimmed)) {
-    return { type: "id", value: trimmed };
-  }
-
-  // URL 파싱
-  const urlPatterns = [
-    /youtube\.com\/channel\/(UC[\w-]{22})/,
-    /youtube\.com\/@([\w.-]+)/,
-    /youtube\.com\/c\/([\w.-]+)/,
-  ];
-  for (const pattern of urlPatterns) {
-    const match = trimmed.match(pattern);
-    if (match) {
-      if (match[1].startsWith("UC")) return { type: "id", value: match[1] };
-      return { type: "handle", value: match[1] };
-    }
-  }
-
-  // @핸들
-  if (trimmed.startsWith("@")) {
-    return { type: "handle", value: trimmed.slice(1) };
-  }
-
-  return { type: "search", value: trimmed };
-}
-
-/* ---------- Mock 데이터 ---------- */
-
-function seededRandom(seed: number): number {
-  const x = Math.sin(seed) * 10000;
-  return x - Math.floor(x);
-}
-
-function generateMockDNA(seed: number): DNAScores {
-  return {
-    content: Math.round(30 + seededRandom(seed * 1) * 60),
-    growth: Math.round(20 + seededRandom(seed * 2) * 70),
-    influence: Math.round(25 + seededRandom(seed * 3) * 65),
-    engagement: Math.round(20 + seededRandom(seed * 4) * 70),
-    consistency: Math.round(30 + seededRandom(seed * 5) * 60),
-  };
-}
-
-function generateMockResponse(channelInput: string): DNAResponse {
-  const seed = channelInput.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  const targetDNA = generateMockDNA(seed);
-
-  const mockNames = [
-    "테크리뷰 마스터",
-    "일상 브이로그 채널",
-    "게이밍 프로",
-    "쿠킹 스튜디오",
-    "뮤직 커버 채널",
-    "여행 다이어리",
-    "교육 콘텐츠 랩",
-    "뷰티 클래스",
-  ];
-
-  const target: ChannelDNA = {
-    channelId: `UC${channelInput.slice(0, 22).padEnd(22, "x")}`,
-    name: channelInput.startsWith("@") ? channelInput : `채널 ${channelInput.slice(0, 8)}`,
-    thumbnail: `https://placehold.co/176x176/1e293b/94a3b8?text=${encodeURIComponent(channelInput.slice(0, 2))}`,
-    subscribers: Math.round(10000 + seededRandom(seed * 10) * 990000),
-    videoCount: Math.round(50 + seededRandom(seed * 11) * 450),
-    viewCount: Math.round(1000000 + seededRandom(seed * 12) * 99000000),
-    dna: targetDNA,
-  };
-
-  const matches: MatchedChannel[] = [];
-  for (let i = 0; i < 5; i++) {
-    const mSeed = seed + (i + 1) * 137;
-    const mDNA = generateMockDNA(mSeed);
-    // 유사하게 만들기 위해 target DNA 방향으로 보정
-    const keys: (keyof DNAScores)[] = ["content", "growth", "influence", "engagement", "consistency"];
-    for (const k of keys) {
-      mDNA[k] = Math.round(mDNA[k] * 0.4 + targetDNA[k] * 0.6 + (seededRandom(mSeed + i) - 0.3) * 20);
-      mDNA[k] = Math.max(5, Math.min(100, mDNA[k]));
-    }
-    // 성장성을 약간 높여서 "더 빠르게 성장하는" 채널로 만들기
-    mDNA.growth = Math.min(100, mDNA.growth + Math.round(seededRandom(mSeed * 7) * 25));
-
-    const similarity = cosineSimilarity(targetDNA, mDNA);
-    const growthDiff = mDNA.growth - targetDNA.growth;
-
-    matches.push({
-      channelId: `UC${"mock".repeat(5)}${i}x`.slice(0, 24),
-      name: mockNames[i % mockNames.length],
-      thumbnail: `https://placehold.co/176x176/1e293b/94a3b8?text=${encodeURIComponent(mockNames[i % mockNames.length].slice(0, 2))}`,
-      subscribers: Math.round(target.subscribers * (0.5 + seededRandom(mSeed * 8) * 1.5)),
-      videoCount: Math.round(50 + seededRandom(mSeed * 9) * 450),
-      viewCount: Math.round(target.viewCount * (0.3 + seededRandom(mSeed * 10) * 2)),
-      dna: mDNA,
-      similarity: Math.round(similarity * 10) / 10,
-      growthDiff,
-      benchmarkPoints: getBenchmarkPoints(targetDNA, mDNA),
-    });
-  }
-
-  matches.sort((a, b) => b.similarity - a.similarity);
-
-  return { target, matches };
-}
-
 /* ---------- API Route ---------- */
 
 export async function POST(request: NextRequest) {
@@ -236,9 +201,10 @@ export async function POST(request: NextRequest) {
 
     const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
     if (!YOUTUBE_API_KEY) {
-      // Mock 폴백
-      const mockData = generateMockResponse(rawInput);
-      return NextResponse.json({ data: mockData });
+      return NextResponse.json(
+        { error: { code: "NO_API_KEY", message: "YouTube API 키가 설정되지 않았습니다" } },
+        { status: 503 }
+      );
     }
 
     // 채널 ID 확인
@@ -247,8 +213,6 @@ export async function POST(request: NextRequest) {
 
     if (parsed.type === "id") {
       resolvedId = parsed.value;
-    } else if (parsed.type === "handle") {
-      resolvedId = await youtubeClient.resolveHandle(parsed.value);
     } else {
       resolvedId = await youtubeClient.resolveHandle(parsed.value);
     }
@@ -273,6 +237,13 @@ export async function POST(request: NextRequest) {
     const subscriberCount = parseInt(ch.statistics.subscriberCount) || 0;
     const viewCount = parseInt(ch.statistics.viewCount) || 0;
     const videoCount = parseInt(ch.statistics.videoCount) || 0;
+    const sourceTopicUrls = ch.topicDetails?.topicCategories ?? [];
+
+    // 채널 생성일로 실제 채널 나이 계산
+    const channelCreatedAt = ch.snippet.publishedAt
+      ? new Date(ch.snippet.publishedAt)
+      : new Date(Date.now() - 365 * 86400000); // fallback: 1년 전
+    const channelAgeDays = Math.max(30, (Date.now() - channelCreatedAt.getTime()) / (1000 * 60 * 60 * 24));
 
     // 2. 최근 영상 10개 조회
     const recentVideos = await youtubeClient.getChannelVideos(resolvedId, 10);
@@ -284,6 +255,9 @@ export async function POST(request: NextRequest) {
     let avgLikes = 0;
     let avgComments = 0;
     const uploadIntervals: number[] = [];
+    let recentVideoCount = 0;
+    let contentTags: string[] = [];
+    let titleKeywords: string[] = [];
 
     if (videoIds.length > 0) {
       const videoDetails = await youtubeClient.getVideoDetails(videoIds);
@@ -297,20 +271,32 @@ export async function POST(request: NextRequest) {
       avgLikes = videos.length > 0 ? totalLikes / videos.length : 0;
       avgComments = videos.length > 0 ? totalComments / videos.length : 0;
 
+      // 최근 30일 영상 수 카운트
+      const thirtyDaysAgo = Date.now() - 30 * 86400000;
+      for (const v of videos) {
+        if (new Date(v.snippet.publishedAt).getTime() >= thirtyDaysAgo) {
+          recentVideoCount++;
+        }
+      }
+
+      // 콘텐츠 DNA 추출 (태그 + 제목 키워드)
+      contentTags = extractTopTags(
+        videos.map((v) => ({ tags: v.snippet.tags })),
+        8
+      );
+      titleKeywords = extractTitleKeywords(
+        videos.map((v) => ({ title: v.snippet.title })),
+        5
+      );
+
       // 업로드 간격 계산
       const dates = recentVideos.items
         .map((v) => new Date(v.snippet.publishedAt).getTime())
         .sort((a, b) => b - a);
       for (let i = 0; i < dates.length - 1; i++) {
-        uploadIntervals.push((dates[i] - dates[i + 1]) / (1000 * 60 * 60 * 24)); // days
+        uploadIntervals.push((dates[i] - dates[i + 1]) / (1000 * 60 * 60 * 24));
       }
     }
-
-    // 채널 나이 (대략적)
-    const firstVideoDate = recentVideos.items.length > 0
-      ? new Date(recentVideos.items[recentVideos.items.length - 1].snippet.publishedAt)
-      : new Date();
-    const channelAgeDays = Math.max(1, (Date.now() - firstVideoDate.getTime()) / (1000 * 60 * 60 * 24));
 
     const targetDNA = calculateDNA({
       videoCount,
@@ -320,7 +306,8 @@ export async function POST(request: NextRequest) {
       avgLikes,
       avgComments,
       uploadIntervals,
-      channelAgeDays: Math.max(channelAgeDays, 365), // 최소 1년으로 추정
+      channelAgeDays,
+      recentVideoCount,
     });
 
     const target: ChannelDNA = {
@@ -333,86 +320,156 @@ export async function POST(request: NextRequest) {
       dna: targetDNA,
     };
 
-    // 3. 유사 채널 검색
-    const searchQuery = ch.snippet.title.split(/[\s\-_|]/)[0]; // 채널명 첫 키워드
-    const searchResult = await youtubeClient.searchChannels(searchQuery, 20);
+    // 3. 유사 채널 검색 — 태그 기반 콘텐츠 DNA 매칭
 
-    const candidateIds = searchResult.items
-      .map((item) => item.id.channelId || item.snippet.channelId)
-      .filter((id): id is string => !!id && id !== resolvedId);
+    // 검색 쿼리 구성: 태그 우선, 그 다음 제목 키워드, 최후 채널명
+    const searchQueries: string[] = [];
+    for (const tag of contentTags.slice(0, 3)) {
+      searchQueries.push(tag);
+    }
+    if (searchQueries.length < 3) {
+      for (const kw of titleKeywords) {
+        if (searchQueries.length >= 3) break;
+        if (!searchQueries.includes(kw)) searchQueries.push(kw);
+      }
+    }
+    if (searchQueries.length === 0) {
+      searchQueries.push(ch.snippet.title);
+    }
 
-    const uniqueIds = [...new Set(candidateIds)].slice(0, 15);
+    // 각 쿼리로 영상 검색 → 채널 ID 수집 (히트 빈도 추적)
+    const hitMap = new Map<string, number>();
+    const totalSearches = searchQueries.length;
+
+    for (const query of searchQueries) {
+      try {
+        const searchRes = await youtubeClient.searchVideos(query, 15);
+        const seenInThisSearch = new Set<string>();
+        for (const item of searchRes.items) {
+          const cid = item.snippet.channelId;
+          if (cid && cid !== resolvedId && !seenInThisSearch.has(cid)) {
+            seenInThisSearch.add(cid);
+            hitMap.set(cid, (hitMap.get(cid) || 0) + 1);
+          }
+        }
+      } catch {
+        // 검색 실패 시 건너뜀
+      }
+    }
+
+    // 히트 빈도순 정렬, 상위 15개 후보
+    const candidateIds = [...hitMap.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 15)
+      .map(([id]) => id);
 
     const matches: MatchedChannel[] = [];
 
-    // 각 후보 채널의 DNA 계산
-    for (const cId of uniqueIds) {
-      try {
-        const cInfo = await youtubeClient.getChannel(cId);
-        if (!cInfo.items || cInfo.items.length === 0) continue;
-
-        const c = cInfo.items[0];
+    if (candidateIds.length > 0) {
+      // 배치로 후보 채널 기본 정보 가져오기
+      const batchInfo = await youtubeClient.getChannel(candidateIds.join(","));
+      const candidateChannels = (batchInfo.items || []).filter((c) => {
         const cSubs = parseInt(c.statistics.subscriberCount) || 0;
-        const cViews = parseInt(c.statistics.viewCount) || 0;
-        const cVideoCount = parseInt(c.statistics.videoCount) || 0;
+        return cSubs >= subscriberCount * 0.1 && cSubs <= subscriberCount * 10;
+      });
 
-        // 비슷한 규모 필터 (구독자 0.1배 ~ 10배)
-        if (cSubs < subscriberCount * 0.1 || cSubs > subscriberCount * 10) continue;
+      // 후보 채널 영상 정보 병렬 조회
+      const videoPromises = candidateChannels.map(async (candidateChannel) => {
+        try {
+          const cId = candidateChannel.id;
+          const cSubs = parseInt(candidateChannel.statistics.subscriberCount) || 0;
+          const cViews = parseInt(candidateChannel.statistics.viewCount) || 0;
+          const cVideoCount = parseInt(candidateChannel.statistics.videoCount) || 0;
+          const candidateTopicUrls = candidateChannel.topicDetails?.topicCategories ?? [];
 
-        const cRecentVideos = await youtubeClient.getChannelVideos(cId, 5);
-        const cVideoIds = cRecentVideos.items
-          .map((v) => v.id.videoId)
-          .filter((id): id is string => !!id);
+          // 후보 채널 나이 계산
+          const cCreatedAt = candidateChannel.snippet.publishedAt
+            ? new Date(candidateChannel.snippet.publishedAt)
+            : new Date(Date.now() - 365 * 86400000);
+          const cAgeDays = Math.max(30, (Date.now() - cCreatedAt.getTime()) / (1000 * 60 * 60 * 24));
 
-        let cAvgViews = 0;
-        let cAvgLikes = 0;
-        let cAvgComments = 0;
-        const cIntervals: number[] = [];
+          const cRecentVideos = await youtubeClient.getChannelVideos(cId, 5);
+          const cVideoIds = cRecentVideos.items
+            .map((v) => v.id.videoId)
+            .filter((id): id is string => !!id);
 
-        if (cVideoIds.length > 0) {
-          const cVidDetails = await youtubeClient.getVideoDetails(cVideoIds);
-          const cVids = cVidDetails.items;
-          cAvgViews = cVids.reduce((s, v) => s + parseInt(v.statistics.viewCount || "0"), 0) / Math.max(1, cVids.length);
-          cAvgLikes = cVids.reduce((s, v) => s + parseInt(v.statistics.likeCount || "0"), 0) / Math.max(1, cVids.length);
-          cAvgComments = cVids.reduce((s, v) => s + parseInt(v.statistics.commentCount || "0"), 0) / Math.max(1, cVids.length);
+          let cAvgViews = 0;
+          let cAvgLikes = 0;
+          let cAvgComments = 0;
+          let cRecentVideoCount = 0;
+          const cIntervals: number[] = [];
 
-          const cDates = cRecentVideos.items
-            .map((v) => new Date(v.snippet.publishedAt).getTime())
-            .sort((a, b) => b - a);
-          for (let j = 0; j < cDates.length - 1; j++) {
-            cIntervals.push((cDates[j] - cDates[j + 1]) / (1000 * 60 * 60 * 24));
+          if (cVideoIds.length > 0) {
+            const cVidDetails = await youtubeClient.getVideoDetails(cVideoIds);
+            const cVids = cVidDetails.items;
+            cAvgViews = cVids.reduce((s, v) => s + parseInt(v.statistics.viewCount || "0"), 0) / Math.max(1, cVids.length);
+            cAvgLikes = cVids.reduce((s, v) => s + parseInt(v.statistics.likeCount || "0"), 0) / Math.max(1, cVids.length);
+            cAvgComments = cVids.reduce((s, v) => s + parseInt(v.statistics.commentCount || "0"), 0) / Math.max(1, cVids.length);
+
+            const thirtyDaysAgo = Date.now() - 30 * 86400000;
+            for (const v of cVids) {
+              if (new Date(v.snippet.publishedAt).getTime() >= thirtyDaysAgo) {
+                cRecentVideoCount++;
+              }
+            }
+
+            const cDates = cRecentVideos.items
+              .map((v) => new Date(v.snippet.publishedAt).getTime())
+              .sort((a, b) => b - a);
+            for (let j = 0; j < cDates.length - 1; j++) {
+              cIntervals.push((cDates[j] - cDates[j + 1]) / (1000 * 60 * 60 * 24));
+            }
           }
+
+          const cDNA = calculateDNA({
+            videoCount: cVideoCount,
+            subscriberCount: cSubs,
+            viewCount: cViews,
+            avgViews: cAvgViews,
+            avgLikes: cAvgLikes,
+            avgComments: cAvgComments,
+            uploadIntervals: cIntervals,
+            channelAgeDays: cAgeDays,
+            recentVideoCount: cRecentVideoCount,
+          });
+
+          // 복합 유사도: 60% DNA 코사인 + 25% 토픽 겹침 + 15% 히트 빈도
+          const dnaSimilarity = cosineSimilarity(targetDNA, cDNA);
+
+          // 토픽 Jaccard 유사도
+          const sourceTopicsSet = new Set(sourceTopicUrls);
+          const intersection = candidateTopicUrls.filter((url) => sourceTopicsSet.has(url));
+          const union = new Set([...sourceTopicUrls, ...candidateTopicUrls]);
+          const topicJaccard = union.size > 0 ? (intersection.length / union.size) * 100 : 50;
+
+          // 히트 빈도 점수
+          const hitCount = hitMap.get(cId) || 0;
+          const hitScore = totalSearches > 0 ? (hitCount / totalSearches) * 100 : 0;
+
+          const combinedSimilarity = dnaSimilarity * 0.6 + topicJaccard * 0.25 + hitScore * 0.15;
+
+          const growthDiff = cDNA.growth - targetDNA.growth;
+
+          return {
+            channelId: cId,
+            name: candidateChannel.snippet.title,
+            thumbnail: candidateChannel.snippet.thumbnails.high?.url ?? "",
+            subscribers: cSubs,
+            videoCount: cVideoCount,
+            viewCount: cViews,
+            dna: cDNA,
+            similarity: Math.round(combinedSimilarity * 10) / 10,
+            growthDiff,
+            benchmarkPoints: getBenchmarkPoints(targetDNA, cDNA),
+          } as MatchedChannel;
+        } catch {
+          return null;
         }
+      });
 
-        const cDNA = calculateDNA({
-          videoCount: cVideoCount,
-          subscriberCount: cSubs,
-          viewCount: cViews,
-          avgViews: cAvgViews,
-          avgLikes: cAvgLikes,
-          avgComments: cAvgComments,
-          uploadIntervals: cIntervals,
-          channelAgeDays: Math.max(channelAgeDays, 365),
-        });
-
-        const similarity = cosineSimilarity(targetDNA, cDNA);
-        const growthDiff = cDNA.growth - targetDNA.growth;
-
-        matches.push({
-          channelId: cId,
-          name: c.snippet.title,
-          thumbnail: c.snippet.thumbnails.high.url,
-          subscribers: cSubs,
-          videoCount: cVideoCount,
-          viewCount: cViews,
-          dna: cDNA,
-          similarity: Math.round(similarity * 10) / 10,
-          growthDiff,
-          benchmarkPoints: getBenchmarkPoints(targetDNA, cDNA),
-        });
-      } catch {
-        // 개별 채널 실패는 무시
-        continue;
+      const results = await Promise.all(videoPromises);
+      for (const r of results) {
+        if (r) matches.push(r);
       }
     }
 

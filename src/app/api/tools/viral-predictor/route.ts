@@ -208,94 +208,6 @@ function extractVideoId(input: string): string | null {
   return null;
 }
 
-/* ---------- Mock Fallback ---------- */
-
-function getMockPrediction(videoId: string): ViralPrediction {
-  return {
-    videoId,
-    title: "[Mock] 유튜브 바이럴 예측 테스트 영상",
-    thumbnail: "",
-    publishedAt: new Date(Date.now() - 3600000 * 5).toISOString(),
-    hoursOld: 5,
-    currentViews: 45200,
-    currentLikes: 3800,
-    currentComments: 420,
-    viralScore: 78,
-    metrics: {
-      viewsPerHour: 9040,
-      engagementRate: 0.093,
-      commentsPerHour: 84,
-      categoryMultiplier: 2.4,
-    },
-    timeline: [
-      {
-        label: "1시간",
-        hours: 1,
-        optimistic: 12000,
-        baseline: 9000,
-        conservative: 5000,
-        actual: 9040,
-      },
-      {
-        label: "6시간",
-        hours: 6,
-        optimistic: 85000,
-        baseline: 52000,
-        conservative: 28000,
-        actual: 45200,
-      },
-      {
-        label: "24시간",
-        hours: 24,
-        optimistic: 380000,
-        baseline: 210000,
-        conservative: 95000,
-      },
-      {
-        label: "48시간",
-        hours: 48,
-        optimistic: 720000,
-        baseline: 380000,
-        conservative: 150000,
-      },
-      {
-        label: "7일",
-        hours: 168,
-        optimistic: 2100000,
-        baseline: 850000,
-        conservative: 320000,
-      },
-    ],
-    factors: [
-      {
-        label: "제목에 클릭 유도 키워드 포함",
-        status: "pass",
-        detail: '제목에 "충격" 키워드 포함',
-      },
-      {
-        label: "첫 1시간 조회수 폭발적",
-        status: "pass",
-        detail: "시간당 9,040회 조회",
-      },
-      {
-        label: "좋아요 비율 높음",
-        status: "pass",
-        detail: "좋아요 비율 8.4%",
-      },
-      {
-        label: "댓글 활발",
-        status: "warn",
-        detail: "시간당 84개 댓글",
-      },
-      {
-        label: "업로드 시간 최적",
-        status: "fail",
-        detail: "업로드 시각: 3시 (KST)",
-      },
-    ],
-  };
-}
-
 /* ---------- Route Handler ---------- */
 
 export async function POST(request: NextRequest) {
@@ -316,7 +228,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let prediction: ViralPrediction;
+    let prediction!: ViralPrediction;
 
     try {
       const videoResponse = await youtubeClient.getVideoDetails([videoId]);
@@ -374,8 +286,10 @@ export async function POST(request: NextRequest) {
         factors: analyzeFactors(stats),
       };
     } catch {
-      // YouTube API 실패 시 mock 폴백
-      prediction = getMockPrediction(videoId);
+      return NextResponse.json(
+        { error: { code: "YOUTUBE_API_ERROR", message: "YouTube API 데이터를 가져올 수 없습니다" } },
+        { status: 502 }
+      );
     }
 
     return NextResponse.json({ data: prediction });

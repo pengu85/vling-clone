@@ -1,8 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import { Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatNumber } from "@/lib/formatters";
+import { CATEGORIES } from "@/domain/categories";
 
 export interface SimilarChannel {
   channelId: string;
@@ -48,11 +50,23 @@ function ChannelCard({
   return (
     <div className="flex-shrink-0 w-40 bg-slate-800/60 border border-slate-800 hover:border-slate-700 rounded-2xl p-4 flex flex-col items-center gap-3 transition-colors group">
       {/* Avatar */}
-      <div
-        className={`w-14 h-14 rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0 ring-2 ring-slate-700 group-hover:ring-indigo-600 transition-all`}
-      >
-        <span className="text-white text-base font-bold">{initials}</span>
-      </div>
+      {channel.thumbnailUrl ? (
+        <div className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-slate-700 group-hover:ring-indigo-600 transition-all">
+          <Image
+            src={channel.thumbnailUrl}
+            alt={channel.title}
+            width={56}
+            height={56}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      ) : (
+        <div
+          className={`w-14 h-14 rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0 ring-2 ring-slate-700 group-hover:ring-indigo-600 transition-all`}
+        >
+          <span className="text-white text-base font-bold">{initials}</span>
+        </div>
+      )}
 
       {/* Info */}
       <div className="flex flex-col items-center gap-1 text-center w-full min-w-0">
@@ -63,7 +77,7 @@ function ChannelCard({
           {formatNumber(channel.subscriberCount)}명
         </p>
         <Badge className="bg-slate-700 text-slate-300 border-none text-[10px] px-2 py-0.5 h-auto mt-0.5">
-          {channel.category}
+          {CATEGORIES.find((c) => c.value === channel.category)?.label ?? channel.category}
         </Badge>
         <span
           className={`text-xs font-medium mt-0.5 ${similarityColor(channel.similarity)}`}

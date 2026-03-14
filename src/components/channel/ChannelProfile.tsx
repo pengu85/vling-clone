@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
 import { Star, Megaphone, Globe, Video, Eye, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatNumber } from "@/lib/formatters";
+import { useFavoriteStore } from "@/stores/favoriteStore";
 import type { Channel } from "@/types";
 
 interface ChannelProfileProps {
@@ -56,7 +56,10 @@ function StatCard({ icon, label, value }: StatCardProps) {
 }
 
 export function ChannelProfile({ channel }: ChannelProfileProps) {
-  const [favorited, setFavorited] = useState(false);
+  const isFavorite = useFavoriteStore((s) => s.isFavorite);
+  const addFavorite = useFavoriteStore((s) => s.addFavorite);
+  const removeFavorite = useFavoriteStore((s) => s.removeFavorite);
+  const favorited = isFavorite(channel.id);
 
   return (
     <div className="bg-slate-900 border-b border-slate-800">
@@ -101,7 +104,25 @@ export function ChannelProfile({ channel }: ChannelProfileProps) {
               variant="outline"
               size="sm"
               className={`border-slate-700 gap-1.5 ${favorited ? "text-yellow-400 border-yellow-600 bg-yellow-900/20" : "text-slate-400"}`}
-              onClick={() => setFavorited((v) => !v)}
+              onClick={() => {
+                if (favorited) {
+                  removeFavorite(channel.id);
+                } else {
+                  addFavorite({
+                    id: channel.id,
+                    youtubeId: channel.id,
+                    title: channel.title,
+                    thumbnailUrl: channel.thumbnailUrl,
+                    subscriberCount: channel.subscriberCount,
+                    dailyAvgViews: channel.dailyAvgViews,
+                    growthRate30d: 0,
+                    algoScore: 0,
+                    estimatedRevenue: 0,
+                    category: channel.category,
+                    country: channel.country,
+                  });
+                }
+              }}
             >
               <Star className={`h-4 w-4 ${favorited ? "fill-yellow-400" : ""}`} />
               {favorited ? "즐겨찾기 완료" : "즐겨찾기"}

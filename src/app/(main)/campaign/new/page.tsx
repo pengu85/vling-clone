@@ -16,7 +16,7 @@ export default function NewCampaignPage() {
     const now = new Date();
     const newCampaign: Campaign = {
       id: `camp-${Date.now()}`,
-      userId: "user-001",
+      userId: "",
       createdAt: now,
       updatedAt: now,
       ...data,

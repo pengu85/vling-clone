@@ -1,10 +1,7 @@
 "use client";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import {
-  generateChannelHistory,
-  type ChannelSnapshot,
-} from "@/lib/monitorMockData";
+import type { ChannelSnapshot } from "@/types/monitor";
 
 export type { ChannelSnapshot };
 
@@ -60,7 +57,7 @@ function ensureHistory(
   if (current[channelId]) return current;
   return {
     ...current,
-    [channelId]: generateChannelHistory(channelId, 30),
+    [channelId]: [],
   };
 }
 

@@ -10,7 +10,6 @@ import { AudienceChart } from "@/components/charts/AudienceChart";
 import { GrowthChart } from "@/components/charts/GrowthChart";
 import { useChannelDetail, useChannelVideos } from "@/hooks/useChannelDetail";
 import { useChannelTrends } from "@/hooks/useChannelTrends";
-import { generateMockChannel, generateMockVideos } from "@/lib/mockData";
 import { formatNumber, formatGrowthRate, formatCurrency } from "@/lib/formatters";
 import { TrendingUp, Zap, DollarSign, Activity } from "lucide-react";
 import { AIInsightPanel } from "@/components/channel/AIInsightPanel";
@@ -70,13 +69,11 @@ export default function ChannelDetailPage({ params }: Props) {
 
   const { data: channelRes, isLoading: channelLoading } = useChannelDetail(id);
   const { data: videosRes, isLoading: videosLoading } = useChannelVideos(id);
-  const { data: trendsData } = useChannelTrends(id, 30);
-  const { data: trendsData60 } = useChannelTrends(id, 60);
+  // 90일 데이터 1회만 호출 — 30/60일은 클라이언트에서 슬라이스
   const { data: trendsData90 } = useChannelTrends(id, 90);
 
-  // API 실패 시 목 데이터 폴백
-  const channel = channelRes?.data ?? generateMockChannel(id);
-  const videos = videosRes?.data ?? generateMockVideos(id, 8);
+  const channel = channelRes?.data;
+  const videos = videosRes?.data ?? [];
 
   // Record recently viewed channel
   const addRecent = useRecentStore((s) => s.addRecent);
@@ -98,13 +95,23 @@ export default function ChannelDetailPage({ params }: Props) {
     }
   }, [channel, addRecent]);
 
-  // Merge trend data across all period fetches for the period-toggle charts
-  // Use 90-day data as the full dataset; charts slice down to 30/60/90 as needed
-  const allViewTrend = trendsData90?.viewTrend ?? trendsData60?.viewTrend ?? trendsData?.viewTrend;
-  const allGrowthTrend = trendsData90?.growthTrend ?? trendsData60?.growthTrend ?? trendsData?.growthTrend;
+  // 90일 데이터에서 필요한 기간만 슬라이스
+  const allViewTrend = trendsData90?.viewTrend;
+  const allGrowthTrend = trendsData90?.growthTrend;
 
   if (channelLoading) {
     return <ChannelDetailSkeleton />;
+  }
+
+  if (!channel) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <p className="text-lg font-semibold text-slate-300">채널을 찾을 수 없습니다</p>
+          <p className="text-sm text-slate-500">YouTube API 연결을 확인해주세요</p>
+        </div>
+      </div>
+    );
   }
 
   return (

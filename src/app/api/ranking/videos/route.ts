@@ -48,97 +48,63 @@ function isShortVideo(duration: string): boolean {
   return parseDurationToSeconds(duration) <= 60;
 }
 
-function randomBetween(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+interface VideoDetailItem {
+  id: string;
+  snippet: {
+    title: string;
+    channelId: string;
+    channelTitle: string;
+    thumbnails: { high: { url: string } };
+    publishedAt: string;
+  };
+  statistics: { viewCount: string; likeCount: string; commentCount: string };
+  contentDetails: { duration: string };
 }
 
-function generateMockVideoRankings(type: "longform" | "shorts", count = 20): VideoRankingItem[] {
-  const titles = type === "longform"
-    ? [
-        "이것이 진짜 맛집이다! 전국 투어 베스트 10",
-        "2026년 최신 스마트폰 완벽 비교 리뷰",
-        "프로게이머가 알려주는 실전 꿀팁",
-        "해외여행 필수 준비물 총정리",
-        "인기 아이돌 컴백 무대 리액션",
-        "자취생 한 달 식비 10만원 도전기",
-        "초보자를 위한 운동 루틴 가이드",
-        "역대급 드라마 명장면 모음",
-        "강아지와 고양이의 일상 브이로그",
-        "주식 투자 초보 가이드",
-        "올해 최고의 영화 TOP 10",
-        "K-POP 댄스 커버 메들리",
-        "자동차 시승 리뷰 - 신차 출시",
-        "과학으로 풀어보는 일상의 비밀",
-        "요즘 핫한 카페 투어",
-        "게임 실황 - 신작 RPG 플레이",
-        "프로그래밍 입문 강좌",
-        "다이어트 식단 일주일 도전",
-        "인테리어 셀프 리모델링",
-        "최신 가전제품 비교 분석",
-      ]
-    : [
-        "이거 실화? #shorts",
-        "30초만에 배우는 요리 꿀팁 #shorts",
-        "강아지 리액션 모음 #shorts",
-        "갓생 모닝루틴 #shorts",
-        "충격적인 반전 #shorts",
-        "1분 운동 챌린지 #shorts",
-        "K-POP 댄스 챌린지 #shorts",
-        "알뜰 쇼핑 꿀팁 #shorts",
-        "ASMR 먹방 #shorts",
-        "일상 브이로그 #shorts",
-        "고양이 일상 #shorts",
-        "게임 하이라이트 #shorts",
-        "메이크업 변신 #shorts",
-        "길거리 음식 #shorts",
-        "여행지 추천 #shorts",
-        "라이프 해킹 #shorts",
-        "핫플레이스 탐방 #shorts",
-        "웃긴 영상 모음 #shorts",
-        "신기한 과학 실험 #shorts",
-        "커플 일상 #shorts",
-      ];
-
-  const channelNames = [
-    "테크수다", "뷰티로그", "게임왕국", "쿡방TV", "여행가자",
-    "음악천재", "스포츠매니아", "교육의정석", "코미디빅뱅", "반려동물TV",
-    "IT리뷰어", "패션위크", "먹방스타", "과학쿠키", "키즈플레이",
-    "자동차리뷰", "영화리뷰어", "운동루틴", "독서클럽", "부동산톡",
-  ];
-
-  return Array.from({ length: count }, (_, i) => {
-    const viewCount = randomBetween(
-      type === "longform" ? 100000 : 500000,
-      type === "longform" ? 10000000 : 50000000
+function mapToRankingItems(videos: VideoDetailItem[]): VideoRankingItem[] {
+  return videos.map((v, i) => {
+    const viewCount = parseInt(v.statistics.viewCount || "0", 10);
+    const likeCount = parseInt(v.statistics.likeCount || "0", 10);
+    const commentCount = parseInt(v.statistics.commentCount || "0", 10);
+    const daysAgo = Math.max(
+      1,
+      Math.floor((Date.now() - new Date(v.snippet.publishedAt).getTime()) / 86400000)
     );
-    const likeCount = Math.round(viewCount * (Math.random() * 0.05 + 0.02));
-    const durationSec = type === "longform"
-      ? randomBetween(180, 3600)
-      : randomBetween(15, 60);
-    const hours = Math.floor(durationSec / 3600);
-    const mins = Math.floor((durationSec % 3600) / 60);
-    const secs = durationSec % 60;
-    const duration = `PT${hours > 0 ? hours + "H" : ""}${mins}M${secs}S`;
 
     return {
       rank: i + 1,
-      videoId: `mock_vid_${type}_${i}`,
-      title: titles[i % titles.length],
-      thumbnailUrl: `https://placehold.co/480x270/4f46e5/white?text=${encodeURIComponent(`Video ${i + 1}`)}`,
-      channelId: `UC_mock_${i}`,
-      channelTitle: channelNames[i % channelNames.length],
+      videoId: v.id,
+      title: v.snippet.title,
+      thumbnailUrl: v.snippet.thumbnails?.high?.url || "",
+      channelId: v.snippet.channelId || "",
+      channelTitle: v.snippet.channelTitle || "",
       viewCount,
       likeCount,
-      publishedAt: new Date(Date.now() - randomBetween(1, 90) * 86400000).toISOString(),
-      duration,
-      isShort: type === "shorts",
-      algoScore: randomBetween(30, 98),
+      publishedAt: v.snippet.publishedAt,
+      duration: v.contentDetails.duration,
+      isShort: isShortVideo(v.contentDetails.duration),
+      algoScore: calculateAlgoScore({
+        viewCount,
+        likeCount,
+        commentCount,
+        subscriberCount: 0,
+        publishedDaysAgo: daysAgo,
+        videoCount: 0,
+      }),
     };
-  }).sort((a, b) => b.viewCount - a.viewCount)
-    .map((item, i) => ({ ...item, rank: i + 1 }));
+  });
 }
 
 const CACHE_TTL = 3600;
+
+const SHORTS_QUERIES: Record<string, string[]> = {
+  all: ["인기 쇼츠", "shorts 한국 인기", "쇼츠 추천"],
+  gaming: ["게임 쇼츠", "게임 shorts"],
+  music: ["음악 쇼츠", "뮤직 shorts"],
+  entertainment: ["예능 쇼츠", "웃긴 shorts"],
+  education: ["교육 쇼츠", "공부 shorts"],
+  sports: ["스포츠 쇼츠", "운동 shorts"],
+};
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
@@ -147,89 +113,79 @@ export async function GET(request: NextRequest) {
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "20");
 
-  const cacheKey = `video-ranking:v1:${type}:${category}`;
+  const cacheKey = `video-ranking:v2:${type}:${category}`;
   let items: VideoRankingItem[];
 
   const hasApiKey = !!process.env.YOUTUBE_API_KEY;
 
-  if (hasApiKey) {
-    const cached = await cache.get<VideoRankingItem[]>(cacheKey);
-    if (cached) {
-      items = cached;
-    } else {
-      try {
-        const categoryId = YOUTUBE_CATEGORY_MAP[category] || "";
-        // Search for videos ordered by view count
-        const searchParams: Record<string, string> = {
-          part: "snippet",
-          type: "video",
-          order: "viewCount",
-          regionCode: "KR",
-          maxResults: "50",
-        };
-        if (categoryId) searchParams.videoCategoryId = categoryId;
+  if (!hasApiKey) {
+    return NextResponse.json(
+      { error: { code: "SERVICE_UNAVAILABLE", message: "YouTube API를 사용할 수 없습니다" } },
+      { status: 503 }
+    );
+  }
 
-        const searchRes = await youtubeClient.searchVideos(
-          category === "all" ? "한국 인기 영상" : `한국 ${category}`,
+  const cached = await cache.get<VideoRankingItem[]>(cacheKey);
+  if (cached) {
+    items = cached;
+  } else {
+    try {
+      const categoryId = YOUTUBE_CATEGORY_MAP[category] || "";
+
+      if (type === "shorts") {
+        // Shorts are not in mostPopular chart — use keyword search instead
+        const queries = SHORTS_QUERIES[category] || [`${category} 쇼츠`, `${category} shorts`];
+
+        const videoIdSet = new Set<string>();
+        for (const query of queries) {
+          try {
+            const searchRes = await youtubeClient.searchVideos(query, 50);
+            for (const item of searchRes.items) {
+              if (item.id.videoId) videoIdSet.add(item.id.videoId);
+            }
+          } catch { /* skip failed query */ }
+        }
+
+        if (videoIdSet.size === 0) {
+          items = [];
+        } else {
+          const ids = [...videoIdSet].slice(0, 50);
+          const details = await youtubeClient.getVideoDetails(ids);
+          // Filter to actual shorts (≤60s)
+          const shortsOnly = details.items.filter((v) =>
+            isShortVideo(v.contentDetails.duration)
+          );
+          const mapped = mapToRankingItems(shortsOnly as unknown as VideoDetailItem[]);
+          items = mapped
+            .sort((a, b) => b.viewCount - a.viewCount)
+            .map((item, i) => ({ ...item, rank: i + 1 }));
+        }
+      } else {
+        // Longform: use mostPopular chart (accurate trending)
+        const trendingRes = await youtubeClient.getTrendingVideos(
+          "KR",
+          categoryId || undefined,
           50
         );
-
-        const videoIds = searchRes.items
-          .map((item) => item.id.videoId)
-          .filter((id): id is string => !!id);
-
-        if (videoIds.length === 0) throw new Error("No videos found");
-
-        const detailRes = await youtubeClient.getVideoDetails(videoIds);
-
-        const allVideos: VideoRankingItem[] = detailRes.items.map((v, i) => {
-          const viewCount = parseInt(v.statistics.viewCount || "0", 10);
-          const likeCount = parseInt(v.statistics.likeCount || "0", 10);
-          const commentCount = parseInt(v.statistics.commentCount || "0", 10);
-          const daysAgo = Math.max(
-            1,
-            Math.floor((Date.now() - new Date(v.snippet.publishedAt).getTime()) / 86400000)
-          );
-
-          return {
-            rank: i + 1,
-            videoId: v.id,
-            title: v.snippet.title,
-            thumbnailUrl: v.snippet.thumbnails?.high?.url || "",
-            channelId: "",
-            channelTitle: "",
-            viewCount,
-            likeCount,
-            publishedAt: v.snippet.publishedAt,
-            duration: v.contentDetails.duration,
-            isShort: isShortVideo(v.contentDetails.duration),
-            algoScore: calculateAlgoScore({
-              viewCount,
-              likeCount,
-              commentCount,
-              subscriberCount: viewCount * 2,
-              publishedDaysAgo: daysAgo,
-              videoCount: 100,
-            }),
-          };
-        });
-
-        // Filter by type
-        const filtered = allVideos.filter((v) =>
-          type === "shorts" ? v.isShort : !v.isShort
+        const longOnly = trendingRes.items.filter((v) =>
+          !isShortVideo(v.contentDetails.duration)
         );
-
-        items = filtered
+        const mapped = mapToRankingItems(longOnly as unknown as VideoDetailItem[]);
+        items = mapped
           .sort((a, b) => b.viewCount - a.viewCount)
           .map((item, i) => ({ ...item, rank: i + 1 }));
-
-        await cache.set(cacheKey, items, CACHE_TTL);
-      } catch {
-        items = generateMockVideoRankings(type);
       }
+
+      // Only cache non-empty results
+      if (items.length > 0) {
+        await cache.set(cacheKey, items, CACHE_TTL);
+      }
+    } catch (err) {
+      console.error("Video ranking API error:", err);
+      // If quota exceeded or API error, return empty result instead of 503
+      // so the UI can show "no data" state gracefully
+      items = [];
     }
-  } else {
-    items = generateMockVideoRankings(type);
   }
 
   const total = items.length;

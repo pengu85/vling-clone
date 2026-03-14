@@ -78,51 +78,6 @@ function getPeriodBuckets(
 
 /* ---------- Mock Fallback ---------- */
 
-function getMockResponse(
-  keywords: string[],
-  period: "7d" | "30d" | "90d"
-): KeywordTrendsResponse {
-  const buckets = getPeriodBuckets(period);
-
-  const keywordDetails: KeywordDetail[] = keywords.map((keyword) => {
-    const baseVideos = Math.round(100 + Math.random() * 900);
-    const baseViews = Math.round(10000 + Math.random() * 200000);
-    const competition = getCompetition(baseVideos);
-
-    return {
-      keyword,
-      totalVideos: baseVideos,
-      avgViews: baseViews,
-      competition,
-      suggestedTitles: [
-        `${keyword} 완벽 가이드 (2025)`,
-        `${keyword} 초보자를 위한 꿀팁 TOP 10`,
-        `${keyword} 현실적인 후기`,
-        `알려주지 않는 ${keyword}의 비밀`,
-        `${keyword} vs 대안 비교`,
-      ],
-      timeline: buckets.map((b) => ({
-        label: b.label,
-        videos: Math.round(baseVideos / 6 + (Math.random() - 0.3) * 50),
-        views: Math.round(baseViews / 6 + (Math.random() - 0.3) * 30000),
-      })),
-    };
-  });
-
-  const relatedKeywords: RelatedKeyword[] = keywords
-    .flatMap((kw) => [
-      { keyword: `${kw} 추천`, score: Math.round(70 + Math.random() * 30) },
-      { keyword: `${kw} 후기`, score: Math.round(60 + Math.random() * 30) },
-      { keyword: `${kw} 비교`, score: Math.round(50 + Math.random() * 30) },
-      { keyword: `${kw} 가격`, score: Math.round(40 + Math.random() * 30) },
-      { keyword: `${kw} 방법`, score: Math.round(40 + Math.random() * 30) },
-    ])
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 10);
-
-  return { keywords: keywordDetails, relatedKeywords };
-}
-
 /* ---------- Route Handler ---------- */
 
 export async function POST(request: NextRequest) {
@@ -143,7 +98,10 @@ export async function POST(request: NextRequest) {
 
     const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
     if (!YOUTUBE_API_KEY) {
-      return NextResponse.json({ data: getMockResponse(keywords, period) });
+      return NextResponse.json(
+        { error: { code: "SERVICE_UNAVAILABLE", message: "YouTube API 키가 설정되지 않았습니다" } },
+        { status: 503 }
+      );
     }
 
     const buckets = getPeriodBuckets(period);
@@ -205,12 +163,14 @@ export async function POST(request: NextRequest) {
           // If timeline is all zeros (videos outside period range), estimate
           const hasData = timeline.some((t) => t.videos > 0);
           if (!hasData) {
-            // Distribute evenly with some variance
+            // Distribute evenly with deterministic variance based on keyword
             const perBucket = Math.max(1, Math.round(vids.length / buckets.length));
             const viewsPerBucket = Math.round(avgViews * perBucket);
-            for (const t of timeline) {
-              t.videos = Math.round(perBucket + (Math.random() - 0.5) * perBucket * 0.5);
-              t.views = Math.round(viewsPerBucket + (Math.random() - 0.5) * viewsPerBucket * 0.5);
+            const seed = keyword.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+            for (let ti = 0; ti < timeline.length; ti++) {
+              const variation = (((seed + ti * 7) % 20) - 10) / 100;
+              timeline[ti].videos = Math.max(0, Math.round(perBucket * (1 + variation)));
+              timeline[ti].views = Math.max(0, Math.round(viewsPerBucket * (1 + variation)));
             }
           }
 
@@ -269,9 +229,9 @@ export async function POST(request: NextRequest) {
     const relatedKeywords: RelatedKeyword[] = [...allTags]
       .filter((tag) => !keywords.some((kw) => tag.toLowerCase().includes(kw.toLowerCase())))
       .slice(0, 10)
-      .map((tag) => ({
+      .map((tag, idx) => ({
         keyword: tag,
-        score: Math.round(50 + Math.random() * 50),
+        score: Math.round(90 - idx * 5),
       }))
       .sort((a, b) => b.score - a.score);
 
@@ -285,7 +245,7 @@ export async function POST(request: NextRequest) {
           if (!relatedKeywords.some((rk) => rk.keyword === candidate)) {
             relatedKeywords.push({
               keyword: candidate,
-              score: Math.round(30 + Math.random() * 40),
+              score: Math.max(30, 70 - relatedKeywords.length * 4),
             });
           }
         }

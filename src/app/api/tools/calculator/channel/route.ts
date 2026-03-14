@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { youtubeClient } from "@/lib/youtube";
 import { estimateMonthlyRevenue } from "@/domain/revenueEstimate";
+import { parseChannelInput } from "@/lib/parseChannel";
 
 /* ---------- Types ---------- */
 
@@ -36,28 +37,6 @@ interface ChannelAnalysis {
 }
 
 /* ---------- Helpers ---------- */
-
-function parseChannelInput(
-  input: string
-): { type: "id" | "handle" | "search"; value: string } {
-  const trimmed = input.trim();
-  if (/^UC[\w-]{22}$/.test(trimmed)) return { type: "id", value: trimmed };
-
-  const urlPatterns = [
-    /youtube\.com\/channel\/(UC[\w-]{22})/,
-    /youtube\.com\/@([\w.-]+)/,
-    /youtube\.com\/c\/([\w.-]+)/,
-  ];
-  for (const pattern of urlPatterns) {
-    const match = trimmed.match(pattern);
-    if (match) {
-      if (match[1].startsWith("UC")) return { type: "id", value: match[1] };
-      return { type: "handle", value: match[1] };
-    }
-  }
-  if (trimmed.startsWith("@")) return { type: "handle", value: trimmed.slice(1) };
-  return { type: "search", value: trimmed };
-}
 
 function estimateBrandedContentPrice(subscribers: number): {
   min: number;
@@ -103,61 +82,6 @@ function detectCategory(titles: string[]): string {
   return sorted[0][1] > 0 ? sorted[0][0] : "entertainment";
 }
 
-/* ---------- Mock Fallback ---------- */
-
-function generateMockResponse(channelInput: string): ChannelAnalysis {
-  const name = channelInput.replace(/^@/, "").replace(/https?:\/\/.*\//g, "");
-  const subscribers = Math.round(Math.random() * 500000 + 10000);
-  const dailyViews = Math.round(subscribers * (0.5 + Math.random() * 2));
-  const monthlyRevenue = estimateMonthlyRevenue({
-    dailyViews,
-    country: "KR",
-    category: "entertainment",
-  });
-
-  return {
-    channel: {
-      id: "UCmock12345678901234",
-      name: name || "채널명",
-      thumbnail: "",
-      subscribers,
-      totalViews: subscribers * 200,
-      videoCount: Math.round(100 + Math.random() * 400),
-      country: "KR",
-      category: "entertainment",
-    },
-    revenue: {
-      dailyViews,
-      monthlyRevenue,
-      yearlyRevenue: monthlyRevenue * 12,
-      cpm: parseFloat(((monthlyRevenue / (dailyViews * 30)) * 1000).toFixed(2)),
-      revenueRange: {
-        min: Math.round(monthlyRevenue * 0.7),
-        max: Math.round(monthlyRevenue * 1.3),
-      },
-    },
-    additionalRevenue: {
-      superChat: { estimated: 0, applicable: false },
-      brandedContent: estimateBrandedContentPrice(subscribers),
-    },
-    similarChannels: Array.from({ length: 5 }, (_, i) => {
-      const subs = Math.round(subscribers * (0.5 + Math.random()));
-      const dv = Math.round(subs * (0.5 + Math.random() * 2));
-      return {
-        id: `UCmock_similar_${i}`,
-        name: `유사채널 ${i + 1}`,
-        thumbnail: "",
-        subscribers: subs,
-        estimatedMonthlyRevenue: estimateMonthlyRevenue({
-          dailyViews: dv,
-          country: "KR",
-          category: "entertainment",
-        }),
-      };
-    }),
-  };
-}
-
 /* ---------- Route Handler ---------- */
 
 export async function POST(request: NextRequest) {
@@ -174,7 +98,7 @@ export async function POST(request: NextRequest) {
 
     const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
     if (!YOUTUBE_API_KEY) {
-      return NextResponse.json({ data: generateMockResponse(channelInput) });
+      return NextResponse.json({ error: { code: "API_KEY_REQUIRED", message: "YouTube API 키가 설정되지 않았습니다" } }, { status: 503 });
     }
 
     // 1. Resolve channel ID

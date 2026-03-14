@@ -1,23 +1,24 @@
 import NextAuth, { type DefaultSession } from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import Google from "next-auth/providers/google"
+import bcrypt from "bcryptjs"
 import type { UserRole, PlanTier } from "@/types/channel"
-
-// ---------------------------------------------------------------------------
-// In-memory user store (demo only – resets on server restart)
-// ---------------------------------------------------------------------------
 
 interface StoredUser {
   id: string
   email: string
   name: string
-  passwordHash: string // plain-text for demo; use bcrypt in production
+  passwordHash: string
   role: UserRole
   plan: PlanTier
   createdAt: string
 }
 
-// Seed one demo account so the app works out of the box
+// Pre-hashed password for demo account ("password123")
+const DEMO_PASSWORD_HASH = bcrypt.hashSync("password123", 10)
+
+// NOTE: In-memory store for demo/development only.
+// For production, replace with database (e.g., Prisma + PostgreSQL).
 const userStore = new Map<string, StoredUser>([
   [
     "demo@vling.com",
@@ -25,7 +26,7 @@ const userStore = new Map<string, StoredUser>([
       id: "user_demo_001",
       email: "demo@vling.com",
       name: "데모 사용자",
-      passwordHash: "password123",
+      passwordHash: DEMO_PASSWORD_HASH,
       role: "advertiser",
       plan: "basic",
       createdAt: new Date().toISOString(),
@@ -90,7 +91,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const stored = userStore.get(email.toLowerCase())
         if (!stored) return null
-        if (stored.passwordHash !== password) return null
+
+        const isValid = await bcrypt.compare(password, stored.passwordHash)
+        if (!isValid) return null
 
         return {
           id: stored.id,

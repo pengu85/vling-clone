@@ -44,7 +44,9 @@ function GoogleIcon({ className }: { className?: string }) {
 export function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/"
+  const rawCallbackUrl = searchParams.get("callbackUrl") ?? "/"
+  // Prevent open redirect: only allow relative paths
+  const callbackUrl = rawCallbackUrl.startsWith("/") ? rawCallbackUrl : "/"
   const [formData, setFormData] = useState<LoginFormData>({ email: "", password: "" })
   const [errors, setErrors] = useState<FieldErrors>({})
   const [serverError, setServerError] = useState<string | null>(null)

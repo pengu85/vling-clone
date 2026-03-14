@@ -10,6 +10,7 @@ interface YouTubeChannelResponse {
       thumbnails: { high: { url: string } };
       country?: string;
       defaultLanguage?: string;
+      publishedAt?: string;
     };
     statistics: {
       subscriberCount: string;
@@ -18,6 +19,9 @@ interface YouTubeChannelResponse {
     };
     brandingSettings?: {
       image?: { bannerExternalUrl?: string };
+    };
+    topicDetails?: {
+      topicCategories?: string[];
     };
   }>;
   pageInfo: { totalResults: number };
@@ -65,6 +69,8 @@ interface YouTubeVideoResponse {
     snippet: {
       title: string;
       description: string;
+      channelId: string;
+      channelTitle: string;
       thumbnails: { high: { url: string } };
       publishedAt: string;
       tags?: string[];
@@ -122,7 +128,7 @@ export const youtubeClient = {
 
   async getChannel(channelId: string): Promise<YouTubeChannelResponse> {
     return youtubeGet<YouTubeChannelResponse>("channels", {
-      part: "snippet,statistics,brandingSettings",
+      part: "snippet,statistics,brandingSettings,topicDetails",
       id: channelId,
     });
   },
@@ -216,14 +222,15 @@ export const youtubeClient = {
   async searchVideosByCategory(
     categoryId: string,
     maxResults = 20,
-    order: "viewCount" | "date" | "relevance" = "viewCount"
+    order: "viewCount" | "date" | "relevance" = "viewCount",
+    regionCode = "KR"
   ): Promise<YouTubeSearchResponse> {
     return youtubeGet<YouTubeSearchResponse>("search", {
       part: "snippet",
       type: "video",
       order,
       videoCategoryId: categoryId,
-      regionCode: "KR",
+      regionCode,
       maxResults: String(maxResults),
     });
   },
@@ -241,3 +248,47 @@ export const youtubeClient = {
     });
   },
 };
+
+/**
+ * Map YouTube topicCategories URLs to simple category strings.
+ */
+const TOPIC_CATEGORY_MAP: Record<string, string> = {
+  "https://en.wikipedia.org/wiki/Technology": "tech",
+  "https://en.wikipedia.org/wiki/Entertainment": "entertainment",
+  "https://en.wikipedia.org/wiki/Music": "music",
+  "https://en.wikipedia.org/wiki/Sports": "sports",
+  "https://en.wikipedia.org/wiki/Gaming": "gaming",
+  "https://en.wikipedia.org/wiki/Comedy": "comedy",
+  "https://en.wikipedia.org/wiki/Education": "education",
+  "https://en.wikipedia.org/wiki/Food": "food",
+  "https://en.wikipedia.org/wiki/Cooking": "food",
+  "https://en.wikipedia.org/wiki/Fashion": "beauty",
+  "https://en.wikipedia.org/wiki/Beauty": "beauty",
+  "https://en.wikipedia.org/wiki/Travel": "travel",
+  "https://en.wikipedia.org/wiki/Pet": "pets",
+  "https://en.wikipedia.org/wiki/Automobile": "auto",
+  "https://en.wikipedia.org/wiki/Film": "entertainment",
+  "https://en.wikipedia.org/wiki/Television_program": "entertainment",
+  "https://en.wikipedia.org/wiki/Lifestyle_(sociology)": "lifestyle",
+  "https://en.wikipedia.org/wiki/Health": "health",
+  "https://en.wikipedia.org/wiki/Fitness": "health",
+  "https://en.wikipedia.org/wiki/News": "news",
+  "https://en.wikipedia.org/wiki/Politics": "news",
+  "https://en.wikipedia.org/wiki/Society": "lifestyle",
+  "https://en.wikipedia.org/wiki/Science": "education",
+  "https://en.wikipedia.org/wiki/Knowledge": "education",
+  "https://en.wikipedia.org/wiki/Hobby": "lifestyle",
+  "https://en.wikipedia.org/wiki/Action_game": "gaming",
+  "https://en.wikipedia.org/wiki/Role-playing_video_game": "gaming",
+  "https://en.wikipedia.org/wiki/Animated_cartoon": "entertainment",
+  "https://en.wikipedia.org/wiki/Children%27s_music": "kids",
+};
+
+export function extractCategory(topicCategories?: string[]): string {
+  if (!topicCategories || topicCategories.length === 0) return "entertainment";
+  for (const url of topicCategories) {
+    const mapped = TOPIC_CATEGORY_MAP[url];
+    if (mapped) return mapped;
+  }
+  return "entertainment";
+}
