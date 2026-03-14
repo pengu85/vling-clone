@@ -24,6 +24,11 @@ import {
   Dna,
   LineChart,
   MessageSquareText,
+  Waves,
+  Microscope,
+  Target,
+  HeartPulse,
+  Handshake,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -72,6 +77,11 @@ const menuSections: MenuSection[] = [
       { label: "채널 DNA", href: "/tools/channel-dna", icon: Dna },
       { label: "수익 시뮬레이터", href: "/tools/revenue-simulator", icon: LineChart },
       { label: "댓글 분석", href: "/tools/comment-analyzer", icon: MessageSquareText },
+      { label: "트렌드 서핑", href: "/tools/trend-surfing", icon: Waves },
+      { label: "알고리즘 해부", href: "/tools/algorithm-anatomy", icon: Microscope },
+      { label: "수익 역산기", href: "/tools/revenue-reverse", icon: Target },
+      { label: "채널 건강검진", href: "/tools/channel-health", icon: HeartPulse },
+      { label: "콜라보 궁합", href: "/tools/collab-score", icon: Handshake },
     ],
   },
   {
