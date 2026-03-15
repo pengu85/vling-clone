@@ -1,4 +1,12 @@
-const memoryCache = new Map<string, { data: string; expiresAt: number }>();
+// Use globalThis to persist cache across hot reloads in development
+// and within the same server process in production.
+// For true serverless persistence, replace with Upstash Redis.
+const globalKey = "__blingCache" as const;
+type CacheEntry = { data: string; expiresAt: number };
+
+const memoryCache: Map<string, CacheEntry> =
+  (globalThis as Record<string, unknown>)[globalKey] as Map<string, CacheEntry> ??
+  ((globalThis as Record<string, unknown>)[globalKey] = new Map<string, CacheEntry>());
 
 export const cache = {
   async get<T>(key: string): Promise<T | null> {

@@ -14,6 +14,11 @@ import { Badge } from "@/components/ui/badge";
 import { formatNumber, formatGrowthRate, formatCurrency } from "@/lib/formatters";
 import type { RankingItem } from "@/hooks/useRanking";
 import { cn } from "@/lib/utils";
+import { CATEGORIES } from "@/domain/categories";
+
+function getCategoryLabel(value: string): string {
+  return CATEGORIES.find((c) => c.value === value)?.label ?? value;
+}
 
 interface RankingTableProps {
   data: RankingItem[];
@@ -93,6 +98,9 @@ export function RankingTable({ data, isLoading }: RankingTableProps) {
               <div
                 key={item.id}
                 onClick={() => router.push(`/channel/${ch.id}`)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/channel/${ch.id}`); } }}
+                role="link"
+                tabIndex={0}
                 className={cn(
                   "relative flex items-center gap-3 px-4 py-3 border-b border-slate-800 last:border-0 cursor-pointer transition-colors",
                   isTop3 ? "bg-slate-800/40 hover:bg-slate-800/70" : "hover:bg-slate-800/30"
@@ -137,7 +145,7 @@ export function RankingTable({ data, isLoading }: RankingTableProps) {
                     variant="secondary"
                     className="mt-0.5 h-4 px-1.5 text-[10px] bg-slate-700 text-slate-400 border-0"
                   >
-                    {ch.category}
+                    {getCategoryLabel(ch.category)}
                   </Badge>
                 </div>
                 {/* 구독자 + 성장률 */}
@@ -198,6 +206,9 @@ export function RankingTable({ data, isLoading }: RankingTableProps) {
                     <TableRow
                       key={item.id}
                       onClick={() => router.push(`/channel/${ch.id}`)}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/channel/${ch.id}`); } }}
+                      role="link"
+                      tabIndex={0}
                       className={cn(
                         "border-slate-800 cursor-pointer transition-colors",
                         isTop3
@@ -248,7 +259,7 @@ export function RankingTable({ data, isLoading }: RankingTableProps) {
                               variant="secondary"
                               className="mt-0.5 h-4 px-1.5 text-xs bg-slate-700 text-slate-400 border-0"
                             >
-                              {ch.category}
+                              {getCategoryLabel(ch.category)}
                             </Badge>
                           </div>
                         </div>

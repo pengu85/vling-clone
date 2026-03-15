@@ -2,11 +2,11 @@
 
 import { Star } from "lucide-react";
 import { FavoriteManager } from "@/components/favorites/FavoriteManager";
-import { useFavorites } from "@/hooks/useFavorites";
+import { useFavoriteStore } from "@/stores/favoriteStore";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function FavoritesPage() {
-  const { totalCount } = useFavorites();
+  const totalCount = useFavoriteStore((s) => s.favorites.length);
 
   return (
     <div className="space-y-5">

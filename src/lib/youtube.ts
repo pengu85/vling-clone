@@ -106,6 +106,7 @@ export interface SearchChannelsOptions {
   regionCode?: string;
   order?: "relevance" | "date" | "rating" | "viewCount" | "title";
   relevanceLanguage?: string;
+  pageToken?: string;
 }
 
 export const youtubeClient = {
@@ -123,6 +124,7 @@ export const youtubeClient = {
     if (options.regionCode) params.regionCode = options.regionCode;
     if (options.order) params.order = options.order;
     if (options.relevanceLanguage) params.relevanceLanguage = options.relevanceLanguage;
+    if (options.pageToken) params.pageToken = options.pageToken;
     return youtubeGet<YouTubeSearchResponse>("search", params);
   },
 

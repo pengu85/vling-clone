@@ -115,9 +115,9 @@ export function ChannelProfile({ channel }: ChannelProfileProps) {
                     thumbnailUrl: channel.thumbnailUrl,
                     subscriberCount: channel.subscriberCount,
                     dailyAvgViews: channel.dailyAvgViews,
-                    growthRate30d: 0,
-                    algoScore: 0,
-                    estimatedRevenue: 0,
+                    growthRate30d: channel.growthRate30d,
+                    algoScore: channel.algoScore,
+                    estimatedRevenue: channel.estimatedRevenue,
                     category: channel.category,
                     country: channel.country,
                   });

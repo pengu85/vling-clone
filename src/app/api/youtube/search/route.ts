@@ -65,25 +65,91 @@ export async function GET(request: NextRequest) {
       apiOptions.regionCode = country.toUpperCase();
     }
 
-    // Request more results than needed so client-side filtering has enough to work with.
-    // Subscriber and category filters are applied after fetching details.
-    const fetchLimit = Math.min(limit * 3, 50);
+    // === Multi-strategy search for maximum results + relevance ===
+    // Strategy 1: Channel search (direct channel match)
+    // Strategy 2: Video search by relevance (extracts channels from popular related videos)
+    // Strategy 3: Video search by viewCount (extracts channels from top-viewed videos)
+    // All 3 run in parallel for speed.
 
-    // 1. Search channels by keyword with API-supported filters
-    const searchResult = await youtubeClient.searchChannels(q, fetchLimit, apiOptions);
+    const videoSearchParams: Record<string, string> = {};
+    if (country) videoSearchParams.regionCode = country.toUpperCase();
 
-    if (!searchResult.items || searchResult.items.length === 0) {
+    const [channelSearch, videoSearchRelevance, videoSearchViews] = await Promise.allSettled([
+      // Strategy 1: Direct channel search (2 pages)
+      (async () => {
+        const page1 = await youtubeClient.searchChannels(q, 50, apiOptions);
+        const items = [...(page1.items ?? [])];
+        if (page1.nextPageToken) {
+          try {
+            const page2 = await youtubeClient.searchChannels(q, 50, {
+              ...apiOptions,
+              pageToken: page1.nextPageToken,
+            });
+            if (page2.items) items.push(...page2.items);
+          } catch { /* page 2 optional */ }
+        }
+        return items;
+      })(),
+      // Strategy 2: Video search by relevance → extract channelIds
+      fetch(
+        `https://www.googleapis.com/youtube/v3/search?${new URLSearchParams({
+          part: "snippet",
+          q,
+          type: "video",
+          order: "relevance",
+          maxResults: "50",
+          key: process.env.YOUTUBE_API_KEY || "",
+          ...(country ? { regionCode: country.toUpperCase() } : {}),
+        })}`,
+        { next: { revalidate: 3600 } }
+      ).then((r) => r.json()).then((r) => r.items ?? []).catch(() => []),
+      // Strategy 3: Video search by viewCount → extract channelIds
+      youtubeClient.searchVideos(q, 50).then((r) => r.items ?? []).catch(() => []),
+    ]);
+
+    // Collect unique channel IDs from all strategies
+    const channelIdSet = new Set<string>();
+
+    // From channel search
+    const channelSearchItems = channelSearch.status === "fulfilled" ? channelSearch.value : [];
+    for (const item of channelSearchItems) {
+      const cid = item.id.channelId || item.snippet.channelId;
+      if (cid) channelIdSet.add(cid);
+    }
+
+    // From video searches — extract the channel that uploaded each video
+    const videoItems = [
+      ...(videoSearchRelevance.status === "fulfilled" ? videoSearchRelevance.value : []),
+      ...(videoSearchViews.status === "fulfilled" ? videoSearchViews.value : []),
+    ];
+    for (const item of videoItems) {
+      if (item.snippet.channelId) channelIdSet.add(item.snippet.channelId);
+    }
+
+    if (channelIdSet.size === 0) {
       return NextResponse.json(
         { data: [], pagination: { page: 1, limit, total: 0, totalPages: 0 } }
       );
     }
 
-    // 2. Get channel details for all found channels
-    const channelIds = searchResult.items
-      .map((item) => item.id.channelId || item.snippet.channelId)
-      .filter(Boolean);
+    const channelIds = Array.from(channelIdSet);
 
-    const channelDetails = await youtubeClient.getChannel(channelIds.join(","));
+    const channelItems: Awaited<ReturnType<typeof youtubeClient.getChannel>>["items"] = [];
+    for (let i = 0; i < channelIds.length; i += 50) {
+      const batch = channelIds.slice(i, i + 50);
+      try {
+        const res = await youtubeClient.getChannel(batch.join(","));
+        channelItems.push(...res.items);
+      } catch { /* skip failed batch */ }
+    }
+
+    if (channelItems.length === 0) {
+      return NextResponse.json(
+        { data: [], pagination: { page: 1, limit, total: 0, totalPages: 0 } }
+      );
+    }
+
+    const channelDetails = { items: channelItems };
 
     // 3. Transform to ChannelSearchResult format
     // Note: Per-channel video fetching is intentionally omitted here to avoid
@@ -100,7 +166,8 @@ export async function GET(request: NextRequest) {
       const avgViewsPerVideo = overallAvgViews;
       const avgLikeRate = DEFAULT_AVG_LIKE_RATE;
       const avgCommentRate = DEFAULT_AVG_COMMENT_RATE;
-      const recentVideoCount = 0;
+      // Estimate recent activity: assume ~1 video per week on average, capped at 8
+      const recentVideoCount = Math.min(Math.round(videoCount / 30), 8);
 
       const dailyAvgViews = Math.round(overallAvgViews / 30);
 
@@ -124,6 +191,9 @@ export async function GET(request: NextRequest) {
       // Growth rate: shared calculation based on total views, video count, and subscribers
       const growthRate30d = calculateGrowthRate(viewCount, videoCount, subscriberCount);
 
+      // Estimated daily subscriber change from growth rate
+      const subscriberChange = Math.round(subscriberCount * growthRate30d / 100 / 30);
+
       return {
         id: ch.id,
         youtubeId: ch.id,
@@ -134,7 +204,7 @@ export async function GET(request: NextRequest) {
         growthRate30d,
         algoScore,
         estimatedRevenue,
-        subscriberChange: 0,
+        subscriberChange,
         category: channelCategory,
         country: ch.snippet.country || "KR",
       };
@@ -158,18 +228,8 @@ export async function GET(request: NextRequest) {
       channels = channels.filter((ch) => ch.dailyAvgViews <= maxDailyViews);
     }
 
-    // Shorts channel filter: deterministic based on channel ID character codes
-    if (shortsChannel === "yes") {
-      channels = channels.filter((ch) => {
-        const charSum = ch.id.split("").reduce((sum, c) => sum + c.charCodeAt(0), 0);
-        return charSum % 2 === 0;
-      });
-    } else if (shortsChannel === "no") {
-      channels = channels.filter((ch) => {
-        const charSum = ch.id.split("").reduce((sum, c) => sum + c.charCodeAt(0), 0);
-        return charSum % 2 !== 0;
-      });
-    }
+    // Shorts channel filter: not supported by YouTube API without per-channel video analysis
+    // Filtering removed — was using fake character-code-based determination
 
     // Category filter (YouTube channel search has no category parameter)
     if (category) {
@@ -193,6 +253,20 @@ export async function GET(request: NextRequest) {
 
     const total = channels.length;
     const paginatedChannels = channels.slice((page - 1) * limit, page * limit);
+
+    // Fetch latest video for each paginated channel (parallel, max ~20 calls)
+    const videoPromises = paginatedChannels.map(async (ch) => {
+      try {
+        const vids = await youtubeClient.getChannelVideos(ch.id, 1);
+        if (vids.items?.[0]) {
+          ch.latestVideo = {
+            title: vids.items[0].snippet.title,
+            publishedAt: vids.items[0].snippet.publishedAt,
+          };
+        }
+      } catch { /* skip - latestVideo is optional */ }
+    });
+    await Promise.all(videoPromises);
 
     return NextResponse.json({
       data: paginatedChannels,

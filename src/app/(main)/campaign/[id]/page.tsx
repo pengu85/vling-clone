@@ -2,7 +2,7 @@
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCampaignStore } from "@/stores/campaignStore";
 import { CampaignForm } from "@/components/campaign/CampaignForm";
 import { Button } from "@/components/ui/button";
@@ -117,11 +117,25 @@ export default function CampaignDetailPage() {
   const id = params.id as string;
   const isEditMode = searchParams.get("edit") === "true";
 
-  const { getCampaign, updateCampaign, deleteCampaign } = useCampaignStore();
+  const { getCampaign, fetchCampaigns, updateCampaign, deleteCampaign, isLoading, campaigns } = useCampaignStore();
   const campaign = getCampaign(id);
 
   const [isUpdating, setIsUpdating] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  useEffect(() => {
+    if (campaigns.length === 0) {
+      fetchCampaigns();
+    }
+  }, [campaigns.length, fetchCampaigns]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center px-4 py-24">
+        <p className="text-slate-400">캠페인을 불러오는 중...</p>
+      </div>
+    );
+  }
 
   if (!campaign) {
     return (
@@ -141,9 +155,9 @@ export default function CampaignDetailPage() {
     );
   }
 
-  function handleStatusChange(to: CampaignStatus) {
+  async function handleStatusChange(to: CampaignStatus) {
     setIsUpdating(true);
-    updateCampaign(id, { status: to });
+    await updateCampaign(id, { status: to });
     setIsUpdating(false);
   }
 
@@ -151,17 +165,17 @@ export default function CampaignDetailPage() {
     setShowDeleteDialog(true);
   }
 
-  function confirmDelete() {
-    deleteCampaign(id);
+  async function confirmDelete() {
+    await deleteCampaign(id);
     setShowDeleteDialog(false);
     router.push("/campaign/manage");
   }
 
-  function handleEditSubmit(
+  async function handleEditSubmit(
     data: Omit<Campaign, "id" | "userId" | "createdAt" | "updatedAt">
   ) {
     setIsUpdating(true);
-    updateCampaign(id, data);
+    await updateCampaign(id, data);
     setIsUpdating(false);
     router.push(`/campaign/${id}`);
   }

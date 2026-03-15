@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useCampaignStore } from "@/stores/campaignStore";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -44,10 +44,10 @@ function CampaignCard({ campaign }: { campaign: Campaign }) {
   const { deleteCampaign } = useCampaignStore();
   const badge = STATUS_BADGE[campaign.status];
 
-  function handleDelete(e: React.MouseEvent) {
+  async function handleDelete(e: React.MouseEvent) {
     e.preventDefault();
     if (confirm(`"${campaign.title}" 캠페인을 삭제하시겠습니까?`)) {
-      deleteCampaign(campaign.id);
+      await deleteCampaign(campaign.id);
     }
   }
 
@@ -135,13 +135,25 @@ function EmptyState({ status }: { status: string }) {
 }
 
 export function CampaignDashboard() {
-  const { campaigns } = useCampaignStore();
+  const { campaigns, fetchCampaigns, isLoading } = useCampaignStore();
   const [activeTab, setActiveTab] = useState<"all" | CampaignStatus>("all");
+
+  useEffect(() => {
+    fetchCampaigns();
+  }, [fetchCampaigns]);
 
   const filtered =
     activeTab === "all"
       ? campaigns
       : campaigns.filter((c) => c.status === activeTab);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <p className="text-slate-400">캠페인을 불러오는 중...</p>
+      </div>
+    );
+  }
 
   return (
     <Tabs

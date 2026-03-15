@@ -26,7 +26,12 @@ interface VideoCardProps {
 
 function VideoCard({ video }: VideoCardProps) {
   return (
-    <div className="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden hover:shadow-md hover:shadow-indigo-900/40 transition-shadow cursor-pointer">
+    <a
+      href={`https://www.youtube.com/watch?v=${video.id}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group block bg-slate-800 rounded-xl border border-slate-700 overflow-hidden hover:shadow-md hover:shadow-indigo-900/40 transition-shadow cursor-pointer"
+    >
       {/* 썸네일 */}
       <div className="relative aspect-video bg-slate-700 overflow-hidden">
         {video.thumbnailUrl ? (
@@ -80,7 +85,7 @@ function VideoCard({ video }: VideoCardProps) {
           </span>
         </div>
       </div>
-    </div>
+    </a>
   );
 }
 

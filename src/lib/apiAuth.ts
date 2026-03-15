@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/auth"
+import { PLAN_LIMITS } from "@/domain/planLimits"
+import type { PlanTier } from "@/types"
 
 /**
  * Check if the current request has an authenticated session.
@@ -81,6 +83,51 @@ export function checkRateLimit(
         status: 429,
         headers: { "Retry-After": String(retryAfter) },
       }
+    )
+  }
+
+  return null
+}
+
+type PlanFeature = "dailySearch" | "aiFinder" | "aiContent" | "channelCompare" | "campaignProposal" | "favorites" | "audienceAnalysis"
+
+/**
+ * Check if the user's plan allows access to a numeric-limited feature.
+ * Returns null if allowed, or a 403 NextResponse if the limit is 0.
+ */
+export function checkPlanAccess(
+  plan: PlanTier | undefined,
+  feature: PlanFeature
+): NextResponse | null {
+  const tier = plan ?? "basic"
+  const limits = PLAN_LIMITS[tier]
+  const limit = limits[feature]
+
+  if (typeof limit === "number" && limit <= 0) {
+    return NextResponse.json(
+      { error: `이 기능은 ${tier} 플랜에서 사용할 수 없습니다. 업그레이드가 필요합니다.` },
+      { status: 403 }
+    )
+  }
+
+  return null
+}
+
+/**
+ * Check if the user's plan allows access to a boolean-gated feature.
+ * Returns null if allowed, or a 403 NextResponse if disabled.
+ */
+export function checkBooleanAccess(
+  plan: PlanTier | undefined,
+  feature: "dataDownload" | "adPrice" | "apiAccess"
+): NextResponse | null {
+  const tier = plan ?? "basic"
+  const limits = PLAN_LIMITS[tier]
+
+  if (!limits[feature]) {
+    return NextResponse.json(
+      { error: `이 기능은 ${tier} 플랜에서 사용할 수 없습니다. 업그레이드가 필요합니다.` },
+      { status: 403 }
     )
   }
 

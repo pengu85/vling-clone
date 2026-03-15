@@ -24,19 +24,17 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { useFavorites } from "@/hooks/useFavorites";
+import { useFavoriteStore } from "@/stores/favoriteStore";
 import { formatNumber } from "@/lib/formatters";
 import { CATEGORIES } from "@/domain/categories";
 
 export function FavoriteManager() {
-  const {
-    folders,
-    addFolder,
-    removeFolder,
-    removeFavorite,
-    moveFavorite,
-    getFolderChannels,
-  } = useFavorites();
+  const folders = useFavoriteStore((s) => s.folders);
+  const addFolder = useFavoriteStore((s) => s.addFolder);
+  const removeFolder = useFavoriteStore((s) => s.removeFolder);
+  const removeFavorite = useFavoriteStore((s) => s.removeFavorite);
+  const moveFavorite = useFavoriteStore((s) => s.moveFavorite);
+  const getFolderChannels = useFavoriteStore((s) => s.getFolderChannels);
 
   const [selectedFolder, setSelectedFolder] = useState<string>("기본");
   const [newFolderName, setNewFolderName] = useState("");

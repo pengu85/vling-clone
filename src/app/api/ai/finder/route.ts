@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runAIFinder, type FinderRequest } from "@/lib/ai";
-import { requireAuth, checkRateLimit, getClientIp } from "@/lib/apiAuth";
+import { requireAuth, checkRateLimit, getClientIp, checkPlanAccess } from "@/lib/apiAuth";
 
 export async function POST(request: NextRequest) {
   const authResult = await requireAuth();
   if (!authResult.authorized) return authResult.response;
+
+  const planDenied = checkPlanAccess(authResult.session.user?.plan, "aiFinder");
+  if (planDenied) return planDenied;
 
   const rateLimited = checkRateLimit(getClientIp(request), { limit: 10, windowSeconds: 60 });
   if (rateLimited) return rateLimited;
