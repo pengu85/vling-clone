@@ -71,7 +71,7 @@ export function ChannelProfile({ channel }: ChannelProfileProps) {
             alt={`${channel.title} 배너`}
             fill
             className="object-cover"
-            unoptimized
+
           />
         )}
       </div>
@@ -88,7 +88,7 @@ export function ChannelProfile({ channel }: ChannelProfileProps) {
                   alt={channel.title}
                   fill
                   className="object-cover"
-                  unoptimized
+      
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-indigo-600">

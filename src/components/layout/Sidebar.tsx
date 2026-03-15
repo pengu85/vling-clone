@@ -190,7 +190,7 @@ export function Sidebar({
                   <SidebarNavItem
                     key={item.href}
                     item={item}
-                    isActive={pathname === item.href}
+                    isActive={item.href === "/" ? pathname === "/" : pathname === item.href || pathname.startsWith(item.href + "/")}
                     collapsed={collapsed}
                   />
                 ))}
@@ -243,7 +243,7 @@ export function SidebarContent() {
                 <SidebarNavItem
                   key={item.href}
                   item={item}
-                  isActive={pathname === item.href}
+                  isActive={item.href === "/" ? pathname === "/" : pathname === item.href || pathname.startsWith(item.href + "/")}
                   collapsed={false}
                 />
               ))}

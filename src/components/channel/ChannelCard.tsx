@@ -55,7 +55,7 @@ export function ChannelCard({ channel, rank }: ChannelCardProps) {
                 alt={channel.title}
                 fill
                 className="object-cover"
-                unoptimized
+
               />
             ) : (
               <div className="h-full w-full flex items-center justify-center text-xs text-slate-500 font-medium">
@@ -123,7 +123,7 @@ export function ChannelCard({ channel, rank }: ChannelCardProps) {
                 alt={channel.title}
                 fill
                 className="object-cover"
-                unoptimized
+
               />
             ) : (
               <div className="h-full w-full flex items-center justify-center text-xs text-slate-500 font-medium">
@@ -191,7 +191,9 @@ export function ChannelCard({ channel, rank }: ChannelCardProps) {
         {/* 예상 수익 */}
         <div className="text-right">
           <p className="text-sm font-medium text-slate-200">
-            {formatCurrency(channel.estimatedRevenue)}
+            <span title="CPM 기반 AI 추정치로 실제와 다를 수 있습니다">
+              {formatCurrency(channel.estimatedRevenue)}
+            </span>
           </p>
           <p className="text-[10px] text-slate-500">예상 수익</p>
         </div>

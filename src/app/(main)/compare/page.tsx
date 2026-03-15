@@ -5,7 +5,7 @@ import { Plus, Trash2, BarChart3, GitCompare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CompareTable } from "@/components/compare/CompareTable";
-import { CompareChart } from "@/components/compare/CompareChart";
+import { LazyCompareChart as CompareChart } from "@/components/compare/LazyCompareChart";
 import { ChannelSearchModal } from "@/components/compare/ChannelSearchModal";
 import { useCompareStore } from "@/stores/compareStore";
 import { Breadcrumb } from "@/components/ui/breadcrumb";

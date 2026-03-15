@@ -136,7 +136,6 @@ export function ChannelCompareView({ channels }: ChannelCompareViewProps) {
                 alt={ch.title}
                 fill
                 className="object-cover"
-                unoptimized
               />
             </div>
             <span className="line-clamp-1 text-center text-[11px] font-medium text-slate-200 leading-tight">

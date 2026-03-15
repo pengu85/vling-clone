@@ -17,7 +17,7 @@ import {
 import { Pagination } from "@/components/ranking/Pagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CATEGORIES } from "@/domain/categories";
-import { formatNumber, formatDate } from "@/lib/formatters";
+import { formatNumber, formatDate, formatDuration } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 
 interface VideoRankingItem {
@@ -50,15 +50,6 @@ const VIDEO_TABS = [
   { value: "shorts" as const, label: "Shorts", icon: Smartphone },
 ];
 
-function formatDuration(isoDuration: string): string {
-  const match = isoDuration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-  if (!match) return "0:00";
-  const h = parseInt(match[1] || "0", 10);
-  const m = parseInt(match[2] || "0", 10);
-  const s = parseInt(match[3] || "0", 10);
-  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
 
 function getScoreColor(score: number): string {
   if (score >= 80) return "text-emerald-400";

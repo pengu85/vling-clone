@@ -1,10 +1,5 @@
-"use client"
-
-import { useState } from "react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
-  Search,
   Sparkles,
   TrendingUp,
   Users,
@@ -27,7 +22,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Input } from "@/components/ui/input"
+import { HeroSearch } from "@/components/landing/HeroSearch"
 
 // ─── 데이터 ────────────────────────────────────────────────────────────────────
 
@@ -125,15 +120,6 @@ const tabItems = [
 // ─── 컴포넌트 ──────────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
-  const [activeTab, setActiveTab] = useState("advertiser")
-  const [searchQuery, setSearchQuery] = useState("")
-  const router = useRouter()
-
-  const handleSearch = () => {
-    const q = searchQuery.trim()
-    if (q) router.push(`/search?q=${encodeURIComponent(q)}`)
-  }
-
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       {/* ── 네비게이션 ── */}
@@ -195,22 +181,8 @@ export default function LandingPage() {
             마케팅을 시작하세요.
           </p>
 
-          {/* 검색바 */}
-          <form
-            onSubmit={(e) => { e.preventDefault(); handleSearch() }}
-            className="mx-auto mb-10 flex max-w-xl items-center gap-2 rounded-2xl border border-white/10 bg-white/5 p-2 backdrop-blur-sm"
-          >
-            <Search className="ml-2 h-5 w-5 shrink-0 text-slate-400" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="채널명 또는 키워드를 검색하세요"
-              className="border-0 bg-transparent text-white placeholder:text-slate-500 focus-visible:ring-0 text-base flex-1"
-            />
-            <Button type="submit" className="shrink-0 bg-blue-600 hover:bg-blue-500 text-white border-none h-9 px-5 rounded-xl">
-              검색
-            </Button>
-          </form>
+          {/* 검색바 (client component) */}
+          <HeroSearch />
 
           {/* 통계 배지 */}
           <div className="flex flex-wrap justify-center gap-3">
@@ -280,7 +252,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <Tabs defaultValue="advertiser">
             <div className="mb-8 flex justify-center">
               <TabsList className="h-auto gap-1 p-1 bg-slate-800 rounded-xl">
                 {tabItems.map(({ value, label }) => (
@@ -497,7 +469,7 @@ export default function LandingPage() {
               <span className="font-bold text-slate-200">블링</span>
             </div>
             <p className="text-sm text-slate-500">
-              © 2025 블링. 모든 권리 보유.
+              © 2026 블링. 모든 권리 보유.
             </p>
             <div className="flex gap-4 text-sm text-slate-500">
               <Link href="/terms" className="hover:text-slate-300 transition-colors">이용약관</Link>

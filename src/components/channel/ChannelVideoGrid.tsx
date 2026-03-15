@@ -3,22 +3,13 @@
 import Image from "next/image";
 import { ThumbsUp, Eye, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { formatNumber, formatDate } from "@/lib/formatters";
+import { formatNumber, formatDate, formatDuration } from "@/lib/formatters";
 import type { Video } from "@/types";
 
 interface ChannelVideoGridProps {
   videos: Video[];
 }
 
-function formatDuration(iso: string): string {
-  const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-  if (!match) return iso;
-  const h = parseInt(match[1] ?? "0");
-  const m = parseInt(match[2] ?? "0");
-  const s = parseInt(match[3] ?? "0");
-  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
 
 interface VideoCardProps {
   video: Video;

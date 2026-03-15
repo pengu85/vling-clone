@@ -11,6 +11,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CHART_TOOLTIP_STYLE } from "./chartConfig";
 
 interface GrowthDataPoint {
   date: string;
@@ -74,14 +75,7 @@ export function GrowthChart({ data, title = "성장률 추이" }: GrowthChartPro
               width={40}
             />
             <Tooltip
-              contentStyle={{
-                fontSize: 12,
-                borderRadius: 8,
-                border: "1px solid #334155",
-                backgroundColor: "#1e293b",
-                color: "#e2e8f0",
-                boxShadow: "0 4px 6px -1px rgba(0,0,0,0.4)",
-              }}
+              contentStyle={CHART_TOOLTIP_STYLE}
               formatter={(value) => {
                 const v = Number(value ?? 0);
                 return [`${v >= 0 ? "+" : ""}${v}%`, "성장률"];

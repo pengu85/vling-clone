@@ -32,30 +32,30 @@ export function SearchResultSkeleton({ rows = 8 }: { rows?: number }) {
             className="grid grid-cols-[48px_minmax(200px,1fr)_120px_100px_120px_120px_minmax(160px,1fr)_40px] items-center gap-3 border-b border-slate-800 px-4 py-3 last:border-0"
           >
             {/* 순위 */}
-            <Skeleton dark className="mx-auto h-4 w-6" />
+            <Skeleton className="mx-auto h-4 w-6" />
 
             {/* 채널 썸네일 + 이름 */}
             <div className="flex items-center gap-3">
-              <Skeleton dark className="h-10 w-10 shrink-0 rounded-full" />
+              <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
               <div className="space-y-1.5">
-                <Skeleton dark className="h-3 w-32" />
-                <Skeleton dark className="h-3 w-16" />
+                <Skeleton className="h-3 w-32" />
+                <Skeleton className="h-3 w-16" />
               </div>
             </div>
 
             {/* 구독자, 성장률, 일 조회수, 예상 수익 */}
             {Array.from({ length: 4 }).map((_, j) => (
-              <Skeleton key={j} dark className="ml-auto h-3 w-16" />
+              <Skeleton key={j} className="ml-auto h-3 w-16" />
             ))}
 
             {/* 최신 영상 */}
             <div className="space-y-1.5">
-              <Skeleton dark className="h-3 w-28" />
-              <Skeleton dark className="h-3 w-20" />
+              <Skeleton className="h-3 w-28" />
+              <Skeleton className="h-3 w-20" />
             </div>
 
             {/* 액션 */}
-            <Skeleton dark className="h-6 w-6 rounded-full mx-auto" />
+            <Skeleton className="h-6 w-6 rounded-full mx-auto" />
           </div>
         ))}
       </div>

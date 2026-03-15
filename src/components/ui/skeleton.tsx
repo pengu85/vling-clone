@@ -1,16 +1,10 @@
 import { cn } from "@/lib/utils";
 
-interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
-  /** Use dark variant matching bg-slate-900 theme */
-  dark?: boolean;
-}
-
-export function Skeleton({ className, dark = false, ...props }: SkeletonProps) {
+export function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={cn(
-        "animate-pulse rounded-md",
-        dark ? "bg-slate-800" : "bg-slate-200",
+        "animate-pulse rounded-md bg-slate-200 dark:bg-slate-800",
         className
       )}
       {...props}

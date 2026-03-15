@@ -2,6 +2,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+const MAX_ALERTS = 200;
+
 export interface Alert {
   id: string;
   channelId: string;
@@ -50,7 +52,7 @@ export const useAlertStore = create<AlertState>()(
               read: false,
             },
             ...state.alerts,
-          ],
+          ].slice(0, MAX_ALERTS),
         })),
 
       markAsRead: (id) =>

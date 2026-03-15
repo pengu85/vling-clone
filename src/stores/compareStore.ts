@@ -1,5 +1,6 @@
 "use client";
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import type { Channel } from "@/types";
 
 interface CompareState {
@@ -9,15 +10,20 @@ interface CompareState {
   clearAll: () => void;
 }
 
-export const useCompareStore = create<CompareState>((set) => ({
-  channels: [],
-  addChannel: (channel) =>
-    set((state) => {
-      if (state.channels.length >= 5) return state;
-      if (state.channels.find((c) => c.id === channel.id)) return state;
-      return { channels: [...state.channels, channel] };
+export const useCompareStore = create<CompareState>()(
+  persist(
+    (set) => ({
+      channels: [],
+      addChannel: (channel) =>
+        set((state) => {
+          if (state.channels.length >= 5) return state;
+          if (state.channels.find((c) => c.id === channel.id)) return state;
+          return { channels: [...state.channels, channel] };
+        }),
+      removeChannel: (id) =>
+        set((state) => ({ channels: state.channels.filter((c) => c.id !== id) })),
+      clearAll: () => set({ channels: [] }),
     }),
-  removeChannel: (id) =>
-    set((state) => ({ channels: state.channels.filter((c) => c.id !== id) })),
-  clearAll: () => set({ channels: [] }),
-}));
+    { name: "vling-compare" }
+  )
+);

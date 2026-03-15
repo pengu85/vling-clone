@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatNumber, formatDate } from "@/lib/formatters";
+import { formatNumber, formatDate, formatDuration } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 
@@ -55,16 +55,6 @@ const REGION_OPTIONS = [
   { value: "TH", label: "태국" },
 ];
 
-function formatDuration(isoDuration: string): string {
-  const match = isoDuration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-  if (!match) return "0:00";
-  const h = parseInt(match[1] || "0", 10);
-  const m = parseInt(match[2] || "0", 10);
-  const s = parseInt(match[3] || "0", 10);
-  if (h > 0)
-    return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
 
 export default function TrendingPage() {
   const [category, setCategory] = useState("all");

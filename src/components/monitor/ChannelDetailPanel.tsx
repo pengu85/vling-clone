@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { MonitorTrendChart } from "./MonitorTrendChart";
+import { LazyMonitorTrendChart as MonitorTrendChart } from "./LazyMonitorTrendChart";
 import { formatNumber, formatGrowthRate } from "@/lib/formatters";
 
 interface ChannelDetailPanelProps {

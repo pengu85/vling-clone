@@ -28,7 +28,7 @@ import { CATEGORIES } from "@/domain/categories";
 
 import { MonitorSummaryCards } from "@/components/monitor/MonitorSummaryCards";
 import { FolderSelector } from "@/components/monitor/FolderSelector";
-import { MonitorTrendChart } from "@/components/monitor/MonitorTrendChart";
+import { LazyMonitorTrendChart as MonitorTrendChart } from "@/components/monitor/LazyMonitorTrendChart";
 import { VideoInsights } from "@/components/monitor/VideoInsights";
 import {
   SimilarChannels,

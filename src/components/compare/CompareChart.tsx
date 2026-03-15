@@ -19,6 +19,7 @@ import {
 } from "recharts";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatNumber, formatGrowthRate } from "@/lib/formatters";
+import { CHART_TOOLTIP_STYLE } from "@/components/charts/chartConfig";
 import type { Channel } from "@/types";
 
 interface CompareChartProps {
@@ -137,13 +138,7 @@ export function CompareChart({ channels }: CompareChartProps) {
                   width={60}
                 />
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#0f172a",
-                    border: "1px solid #1e293b",
-                    borderRadius: "8px",
-                    color: "#e2e8f0",
-                    fontSize: 12,
-                  }}
+                  contentStyle={CHART_TOOLTIP_STYLE}
                   formatter={(value: unknown) => [
                     formatMetricValue(Number(value ?? 0), m.key),
                     m.label,

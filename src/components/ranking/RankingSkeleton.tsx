@@ -16,15 +16,15 @@ export function RankingSkeleton({ rows = 10 }: { rows?: number }) {
             key={i}
             className="flex items-center gap-3 px-4 py-3 border-b border-slate-800 last:border-0"
           >
-            <Skeleton dark className="h-5 w-5 shrink-0" />
-            <Skeleton dark className="h-9 w-9 shrink-0 rounded-full" />
+            <Skeleton className="h-5 w-5 shrink-0" />
+            <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
             <div className="flex-1 space-y-1.5">
-              <Skeleton dark className="h-3.5 w-32" />
-              <Skeleton dark className="h-3 w-16" />
+              <Skeleton className="h-3.5 w-32" />
+              <Skeleton className="h-3 w-16" />
             </div>
             <div className="text-right space-y-1.5">
-              <Skeleton dark className="h-3.5 w-14 ml-auto" />
-              <Skeleton dark className="h-3 w-10 ml-auto" />
+              <Skeleton className="h-3.5 w-14 ml-auto" />
+              <Skeleton className="h-3 w-10 ml-auto" />
             </div>
           </div>
         ))}
@@ -53,20 +53,20 @@ export function RankingSkeleton({ rows = 10 }: { rows?: number }) {
             className="grid grid-cols-[56px_1fr_120px_130px_120px_120px] items-center gap-3 px-4 py-3 border-b border-slate-800 last:border-0"
           >
             {/* 순위 */}
-            <Skeleton dark className="h-5 w-6 mx-auto" />
+            <Skeleton className="h-5 w-6 mx-auto" />
 
             {/* 채널 */}
             <div className="flex items-center gap-3">
-              <Skeleton dark className="h-9 w-9 shrink-0 rounded-full" />
+              <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
               <div className="space-y-1.5">
-                <Skeleton dark className="h-3.5 w-32" />
-                <Skeleton dark className="h-3 w-16" />
+                <Skeleton className="h-3.5 w-32" />
+                <Skeleton className="h-3 w-16" />
               </div>
             </div>
 
             {/* 구독자, 성장률, 일 조회수, 예상 수익 */}
             {Array.from({ length: 4 }).map((_, j) => (
-              <Skeleton key={j} dark className="h-3.5 w-16 ml-auto" />
+              <Skeleton key={j} className="h-3.5 w-16 ml-auto" />
             ))}
           </div>
         ))}

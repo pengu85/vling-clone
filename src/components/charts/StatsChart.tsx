@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CHART_TOOLTIP_STYLE } from "./chartConfig";
 import { Button } from "@/components/ui/button";
 
 interface DataPoint {
@@ -98,14 +99,7 @@ export function StatsChart({ data, title, color = "#6366f1" }: StatsChartProps) 
                 width={36}
               />
               <Tooltip
-                contentStyle={{
-                  fontSize: 12,
-                  borderRadius: 8,
-                  border: "1px solid #334155",
-                  backgroundColor: "#1e293b",
-                  color: "#e2e8f0",
-                  boxShadow: "0 4px 6px -1px rgba(0,0,0,0.4)",
-                }}
+                contentStyle={CHART_TOOLTIP_STYLE}
                 formatter={(value) => [formatYAxis(Number(value ?? 0)), title]}
               />
               <Line

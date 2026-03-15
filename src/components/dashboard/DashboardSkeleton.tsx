@@ -16,8 +16,8 @@ export function DashboardSkeleton() {
     <div className="space-y-5">
       {/* 헤더 */}
       <div className="flex items-center gap-3">
-        <Skeleton dark className="h-5 w-5" />
-        <Skeleton dark className="h-6 w-24" />
+        <Skeleton className="h-5 w-5" />
+        <Skeleton className="h-6 w-24" />
       </div>
 
       {/* 통계 카드 4개 */}
@@ -28,10 +28,10 @@ export function DashboardSkeleton() {
             className="rounded-xl border border-slate-700 bg-slate-800 p-4"
           >
             <div className="flex items-center gap-3">
-              <Skeleton dark className="h-9 w-9 rounded-lg shrink-0" />
+              <Skeleton className="h-9 w-9 rounded-lg shrink-0" />
               <div className="space-y-1.5">
-                <Skeleton dark className="h-7 w-8" />
-                <Skeleton dark className="h-3 w-20" />
+                <Skeleton className="h-7 w-8" />
+                <Skeleton className="h-3 w-20" />
               </div>
             </div>
           </div>
@@ -40,7 +40,7 @@ export function DashboardSkeleton() {
 
       {/* 빠른 액션 섹션 레이블 */}
       <div>
-        <Skeleton dark className="h-3 w-20 mb-3" />
+        <Skeleton className="h-3 w-20 mb-3" />
 
         {/* 빠른 액션 카드 4개 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -49,10 +49,10 @@ export function DashboardSkeleton() {
               key={i}
               className="flex items-center gap-3 rounded-xl border border-slate-700 bg-slate-800 p-4"
             >
-              <Skeleton dark className="h-10 w-10 rounded-lg shrink-0" />
+              <Skeleton className="h-10 w-10 rounded-lg shrink-0" />
               <div className="space-y-1.5">
-                <Skeleton dark className="h-3.5 w-20" />
-                <Skeleton dark className="h-3 w-28" />
+                <Skeleton className="h-3.5 w-20" />
+                <Skeleton className="h-3 w-28" />
               </div>
             </div>
           ))}
@@ -66,10 +66,10 @@ export function DashboardSkeleton() {
             {/* 카드 헤더 */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <Skeleton dark className="h-4 w-4" />
-                <Skeleton dark className="h-4 w-24" />
+                <Skeleton className="h-4 w-4" />
+                <Skeleton className="h-4 w-24" />
               </div>
-              <Skeleton dark className="h-7 w-16 rounded-md" />
+              <Skeleton className="h-7 w-16 rounded-md" />
             </div>
 
             {/* 채널 리스트 아이템 6개 */}
@@ -79,12 +79,12 @@ export function DashboardSkeleton() {
                   key={i}
                   className="flex items-center gap-3 px-2 py-2"
                 >
-                  <Skeleton dark className="h-9 w-9 rounded-full shrink-0" />
+                  <Skeleton className="h-9 w-9 rounded-full shrink-0" />
                   <div className="flex-1 min-w-0 space-y-1.5">
-                    <Skeleton dark className="h-3.5 w-36" />
-                    <Skeleton dark className="h-3 w-24" />
+                    <Skeleton className="h-3.5 w-36" />
+                    <Skeleton className="h-3 w-24" />
                   </div>
-                  <Skeleton dark className="h-3 w-12 shrink-0" />
+                  <Skeleton className="h-3 w-12 shrink-0" />
                 </div>
               ))}
             </div>

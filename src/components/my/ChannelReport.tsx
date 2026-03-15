@@ -276,7 +276,6 @@ function ReportDashboard({ channel, videos }: ReportDashboardProps) {
               alt="채널 배너"
               fill
               className="object-cover opacity-60"
-              unoptimized
             />
             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-900/80" />
           </div>
@@ -290,7 +289,6 @@ function ReportDashboard({ channel, videos }: ReportDashboardProps) {
                 width={72}
                 height={72}
                 className="rounded-full border-4 border-slate-900"
-                unoptimized
               />
             </div>
             <div className="flex-1 min-w-0">
@@ -541,7 +539,6 @@ function ReportDashboard({ channel, videos }: ReportDashboardProps) {
                       width={80}
                       height={45}
                       className="rounded shrink-0 object-cover"
-                      unoptimized
                     />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-slate-200 font-medium line-clamp-1 mb-1">

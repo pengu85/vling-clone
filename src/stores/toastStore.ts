@@ -1,6 +1,8 @@
 "use client";
 import { create } from "zustand";
 
+const MAX_TOASTS = 5;
+
 export interface Toast {
   id: string;
   message: string;
@@ -17,7 +19,7 @@ export const useToastStore = create<ToastState>((set) => ({
   toasts: [],
   addToast: (message, type = "success") => {
     const id = Math.random().toString(36).slice(2);
-    set((state) => ({ toasts: [...state.toasts, { id, message, type }] }));
+    set((state) => ({ toasts: [...state.toasts, { id, message, type }].slice(-MAX_TOASTS) }));
     setTimeout(() => {
       set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }));
     }, 3000);

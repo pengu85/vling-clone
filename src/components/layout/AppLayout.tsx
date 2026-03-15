@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Header } from "./Header"
 import { Sidebar } from "./Sidebar"
 import { Footer } from "./Footer"
@@ -13,20 +13,25 @@ interface AppLayoutProps {
 export function AppLayout({ children }: AppLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
+  // Restore sidebar state from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("sidebar-collapsed")
+    if (saved === "true") setSidebarCollapsed(true)
+  }, [])
+
+  function handleCollapsedChange(collapsed: boolean) {
+    setSidebarCollapsed(collapsed)
+    localStorage.setItem("sidebar-collapsed", String(collapsed))
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
-      {/* 상단 헤더 (고정) */}
       <Header />
-
-      {/* 본문 영역 */}
       <div className="flex flex-1 pt-14">
-        {/* 데스크탑 사이드바 */}
         <Sidebar
           collapsed={sidebarCollapsed}
-          onCollapsedChange={setSidebarCollapsed}
+          onCollapsedChange={handleCollapsedChange}
         />
-
-        {/* 메인 콘텐츠 — 사이드바 너비만큼 왼쪽 여백 */}
         <div
           className={cn(
             "flex-1 flex flex-col min-w-0 transition-all duration-200",

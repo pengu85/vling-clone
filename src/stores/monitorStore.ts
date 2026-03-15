@@ -3,6 +3,8 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { ChannelSnapshot } from "@/types/monitor";
 
+const MAX_HISTORY_PER_CHANNEL = 90;
+
 export type { ChannelSnapshot };
 
 export interface MonitorFolder {
@@ -172,6 +174,14 @@ export const useMonitorStore = create<MonitorState>()(
           ),
         })),
     }),
-    { name: "vling-monitor" }
+    {
+      name: "vling-monitor",
+      partialize: (state) => ({
+        ...state,
+        history: Object.fromEntries(
+          Object.entries(state.history).map(([k, v]) => [k, v.slice(-MAX_HISTORY_PER_CHANNEL)])
+        ),
+      }),
+    }
   )
 );

@@ -128,7 +128,7 @@ export function RankingTable({ data, isLoading }: RankingTableProps) {
                       alt={ch.title}
                       fill
                       className="object-cover"
-                      unoptimized
+
                     />
                   ) : (
                     <div className="h-full w-full flex items-center justify-center text-xs font-bold text-slate-400">
@@ -243,7 +243,7 @@ export function RankingTable({ data, isLoading }: RankingTableProps) {
                                 alt={ch.title}
                                 fill
                                 className="object-cover"
-                                unoptimized
+          
                               />
                             ) : (
                               <div className="h-full w-full flex items-center justify-center text-xs font-bold text-slate-400">
@@ -303,6 +303,12 @@ export function RankingTable({ data, isLoading }: RankingTableProps) {
           </div>
         )}
       </div>
+
+      {!isLoading && data.length > 0 && (
+        <div className="px-4 py-2 text-xs text-slate-600 text-right border-t border-slate-800">
+          마지막 업데이트: {new Date().toLocaleString("ko-KR", { hour: "2-digit", minute: "2-digit", month: "short", day: "numeric" })}
+        </div>
+      )}
     </div>
   );
 }
