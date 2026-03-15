@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { youtubeClient } from "@/lib/youtube";
 import { parseChannelInput } from "@/lib/parseChannel";
+import { cache } from "@/lib/cache";
 
 /* ---------- Types ---------- */
 
@@ -366,6 +367,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const channelId = rawInput.trim();
+    const cacheKey = `algo-anatomy:v1:${channelId}`;
+    const cached = await cache.get<AlgorithmAnatomyResponse>(cacheKey);
+    if (cached) {
+      return NextResponse.json({ data: cached });
+    }
+
     const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
     if (!YOUTUBE_API_KEY) {
       return NextResponse.json({ error: { code: "API_KEY_REQUIRED", message: "YouTube API 키가 설정되지 않았습니다" } }, { status: 503 });
@@ -449,6 +457,8 @@ export async function POST(request: NextRequest) {
       algorithmScore,
       algorithmFactors,
     };
+
+    await cache.set(cacheKey, response, 3600);
 
     return NextResponse.json({ data: response });
   } catch (err) {

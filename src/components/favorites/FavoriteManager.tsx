@@ -112,10 +112,11 @@ export function FavoriteManager() {
             const count = getFolderChannels(folder).length;
             const isActive = selectedFolder === folder;
             return (
-              <div
+              <button
+                type="button"
                 key={folder}
                 className={cn(
-                  "group flex items-center gap-2 rounded-md px-2 py-1.5 cursor-pointer transition-colors",
+                  "group flex items-center gap-2 rounded-md px-2 py-1.5 cursor-pointer transition-colors text-left w-full",
                   isActive
                     ? "bg-violet-600/20 text-violet-300"
                     : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
@@ -152,7 +153,7 @@ export function FavoriteManager() {
                     <X className="h-3 w-3" />
                   </button>
                 )}
-              </div>
+              </button>
             );
           })}
         </div>

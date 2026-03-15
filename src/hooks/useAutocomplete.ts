@@ -72,6 +72,7 @@ export function useAutocomplete(query: string, enabled = true): UseAutocompleteR
     }, 300);
 
     return () => {
+      abortRef.current?.abort();
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
       }

@@ -5,6 +5,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AlertList } from "@/components/alerts/AlertList";
 import { MonitoringSettings } from "@/components/alerts/MonitoringSettings";
 import { useAlertStore } from "@/stores/alertStore";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function AlertsPage() {
   const unreadCount = useAlertStore((s) => s.unreadCount);
@@ -12,6 +13,7 @@ export default function AlertsPage() {
 
   return (
     <div className="space-y-5">
+      <Breadcrumb items={[{ label: "알림" }]} />
       {/* 헤더 */}
       <div className="flex items-center gap-3">
         <Bell className="h-5 w-5 text-blue-400" />

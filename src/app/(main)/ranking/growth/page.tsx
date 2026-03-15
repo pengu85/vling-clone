@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { TrendingUp, Flame, Zap, ArrowUpRight, AlertTriangle } from "lucide-react";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -40,8 +41,9 @@ export default function GrowthRankingPage() {
     : "0";
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="text-slate-100">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <Breadcrumb items={[{ label: "랭킹", href: "/ranking/subscriber" }, { label: "성장" }]} />
         {/* 히어로 헤더 */}
         <div className="mb-8 rounded-2xl bg-gradient-to-r from-orange-600/20 via-red-600/20 to-pink-600/20 border border-orange-500/20 p-6">
           <div className="flex items-center gap-3 mb-3">
@@ -51,7 +53,7 @@ export default function GrowthRankingPage() {
             <div>
               <h1 className="text-2xl font-bold text-white">요즘 뜨는 채널</h1>
               <p className="text-sm text-slate-400">
-                최근 30일간 가장 빠르게 성장하는 채널을 확인하세요
+                성장률과 일 조회수를 종합하여 가장 주목받는 채널을 확인하세요
               </p>
             </div>
           </div>
@@ -103,7 +105,7 @@ export default function GrowthRankingPage() {
             </SelectContent>
           </Select>
           <Badge className="bg-orange-600/20 text-orange-300 border-orange-500/30 text-xs">
-            성장률 순 정렬
+            성장률 + 일 조회수 종합
           </Badge>
         </div>
 

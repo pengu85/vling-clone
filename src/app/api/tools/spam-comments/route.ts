@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { youtubeClient } from "@/lib/youtube";
+import { cache } from "@/lib/cache";
 
 // ── Types ──
 
@@ -139,10 +140,19 @@ function extractChannelId(input: string): string {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { channelId: rawInput } = body as { channelId: string };
+    const rawInput = body.channelId;
 
-    if (!rawInput) {
-      return NextResponse.json({ error: "channelId is required" }, { status: 400 });
+    if (!rawInput || typeof rawInput !== "string" || rawInput.trim().length === 0) {
+      return NextResponse.json(
+        { error: { code: "INVALID_INPUT", message: "channelId는 비어있지 않은 문자열이어야 합니다" } },
+        { status: 400 }
+      );
+    }
+
+    const cacheKey = `spam-comments:v1:${rawInput.trim()}`;
+    const cachedResult = await cache.get<SpamAnalysisResponse>(cacheKey);
+    if (cachedResult) {
+      return NextResponse.json(cachedResult);
     }
 
     const channelInput = extractChannelId(rawInput);
@@ -250,6 +260,8 @@ export async function POST(req: NextRequest) {
         .map(([name, count]) => ({ name, count }))
         .sort((a, b) => b.count - a.count),
     };
+
+    await cache.set(cacheKey, response, 3600);
 
     return NextResponse.json(response);
   } catch (error) {

@@ -1,7 +1,7 @@
 "use client";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Campaign, CampaignStatus } from "@/types/campaign";
+import type { Campaign } from "@/types/campaign";
 
 interface CampaignState {
   campaigns: Campaign[];

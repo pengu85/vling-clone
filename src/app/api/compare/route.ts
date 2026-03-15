@@ -15,7 +15,16 @@ const DEMO_BY_CATEGORY: Record<string, { maleRatio: number }> = {
 };
 
 export async function POST(request: NextRequest) {
-  const { channelIds } = await request.json() as { channelIds: string[] };
+  let channelIds: string[];
+  try {
+    const body = await request.json() as { channelIds: string[] };
+    channelIds = body.channelIds;
+  } catch {
+    return NextResponse.json(
+      { error: { code: "BAD_REQUEST", message: "잘못된 요청 형식입니다" } },
+      { status: 400 }
+    );
+  }
 
   if (!channelIds || channelIds.length < 2 || channelIds.length > 5) {
     return NextResponse.json(
@@ -81,6 +90,7 @@ export async function POST(request: NextRequest) {
         estimatedAdPrice: estimateAdPrice(subscriberCount, engagementRate),
         audienceMaleRatio: (DEMO_BY_CATEGORY[category] ?? { maleRatio: 55 }).maleRatio,
         audienceAgeDistribution: { "13-17": 8, "18-24": 28, "25-34": 35, "35-44": 18, "45-54": 8, "55+": 3 },
+        isEstimated: true,
         audienceTopCountries: [
           { country: ch.snippet.country || "KR", ratio: 72 },
           { country: "US", ratio: 12 },

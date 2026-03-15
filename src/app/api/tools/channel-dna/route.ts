@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { youtubeClient } from "@/lib/youtube";
 import { parseChannelInput } from "@/lib/parseChannel";
+import { cache } from "@/lib/cache";
 
 /* ---------- Types ---------- */
 
@@ -190,13 +191,20 @@ function getBenchmarkPoints(target: DNAScores, match: DNAScores): string[] {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { channelId: rawInput } = body as { channelId: string };
+    const rawInput = body.channelId;
 
-    if (!rawInput || rawInput.trim().length === 0) {
+    if (!rawInput || typeof rawInput !== "string" || rawInput.trim().length === 0) {
       return NextResponse.json(
         { error: { code: "INVALID_INPUT", message: "채널 URL, ID 또는 이름을 입력하세요" } },
         { status: 400 }
       );
+    }
+
+    // Cache check (2-hour TTL for expensive route)
+    const cacheKey = `channel-dna:v1:${rawInput.trim()}`;
+    const cached = await cache.get<DNAResponse>(cacheKey);
+    if (cached) {
+      return NextResponse.json({ data: cached });
     }
 
     const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
@@ -477,7 +485,10 @@ export async function POST(request: NextRequest) {
     matches.sort((a, b) => b.similarity - a.similarity);
     const topMatches = matches.slice(0, 5);
 
-    return NextResponse.json({ data: { target, matches: topMatches } as DNAResponse });
+    const dnaResponse: DNAResponse = { target, matches: topMatches };
+    await cache.set(cacheKey, dnaResponse, 7200);
+
+    return NextResponse.json({ data: dnaResponse });
   } catch (err) {
     console.error("Channel DNA API error:", err);
     return NextResponse.json(

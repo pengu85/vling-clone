@@ -31,15 +31,19 @@ interface RateLimitEntry {
 
 const rateLimitStore = new Map<string, RateLimitEntry>()
 
-// Cleanup stale entries every 5 minutes
-setInterval(() => {
-  const now = Date.now()
-  for (const [key, entry] of rateLimitStore) {
-    if (entry.resetAt < now) {
-      rateLimitStore.delete(key)
+// Cleanup stale entries every 5 minutes.
+// Intentional for long-lived server processes — the interval is never cleared.
+// Guard against duplicate intervals during hot reload.
+if (!(globalThis as Record<string, unknown>).__rateLimitCleanupInterval) {
+  (globalThis as Record<string, unknown>).__rateLimitCleanupInterval = setInterval(() => {
+    const now = Date.now()
+    for (const [key, entry] of rateLimitStore) {
+      if (entry.resetAt < now) {
+        rateLimitStore.delete(key)
+      }
     }
-  }
-}, 5 * 60 * 1000)
+  }, 5 * 60 * 1000)
+}
 
 interface RateLimitOptions {
   /** Max requests per window */
@@ -88,7 +92,11 @@ export function checkRateLimit(
  */
 export function getClientIp(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for")
-  if (forwarded) return forwarded.split(",")[0].trim()
+  if (forwarded) {
+    const ip = forwarded.split(",")[0].trim()
+    // Validate basic IPv4 or IPv6 format; fall back to "unknown" if invalid.
+    if (/^[\d.]+$/.test(ip) || /^[0-9a-fA-F:]+$/.test(ip)) return ip
+  }
   const real = request.headers.get("x-real-ip")
   if (real) return real
   return "unknown"

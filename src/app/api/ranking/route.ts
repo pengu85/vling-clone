@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { youtubeClient, extractCategory } from "@/lib/youtube";
 import { cache } from "@/lib/cache";
-import { calculateChannelAlgoScore } from "@/domain/algoScore";
+import { calculateChannelAlgoScore, DEFAULT_AVG_LIKE_RATE, DEFAULT_AVG_COMMENT_RATE } from "@/domain/algoScore";
 import { estimateMonthlyRevenue } from "@/domain/revenueEstimate";
 import { calculateGrowthRate } from "@/domain/growthRate";
 import type { ChannelSearchResult } from "@/types";
@@ -123,8 +123,8 @@ async function fetchRealRankings(category: string): Promise<RankingEntry[]> {
     const algoScore = calculateChannelAlgoScore({
       avgViewsPerVideo,
       subscriberCount,
-      avgLikeRate: 0.035,   // estimated average
-      avgCommentRate: 0.005,
+      avgLikeRate: DEFAULT_AVG_LIKE_RATE,
+      avgCommentRate: DEFAULT_AVG_COMMENT_RATE,
       videoCount,
       recentVideoCount: Math.min(Math.round(videoCount / 30), 8),
     });
@@ -149,9 +149,16 @@ async function fetchRealRankings(category: string): Promise<RankingEntry[]> {
     };
   });
 
+  // Filter out channels too small to be meaningful in rankings
+  const MIN_SUBSCRIBERS = 1000;
+  const MIN_DAILY_VIEWS = 500;
+  const qualified = channels.filter(
+    (ch) => ch.subscriberCount >= MIN_SUBSCRIBERS && ch.dailyAvgViews >= MIN_DAILY_VIEWS
+  );
+
   // Remove duplicates by youtubeId
   const seen = new Set<string>();
-  const unique = channels.filter((ch) => {
+  const unique = qualified.filter((ch) => {
     if (seen.has(ch.youtubeId)) return false;
     seen.add(ch.youtubeId);
     return true;
@@ -173,12 +180,39 @@ async function fetchRealRankings(category: string): Promise<RankingEntry[]> {
   return entries;
 }
 
+function calcTrendingScore(entries: RankingEntry[]): Map<string, number> {
+  // Normalize growth rate and daily views to 0~1, then combine
+  // This prevents tiny channels with high growth from dominating
+  const scores = new Map<string, number>();
+  if (entries.length === 0) return scores;
+
+  const growths = entries.map((e) => e.channel.growthRate30d);
+  const views = entries.map((e) => e.channel.dailyAvgViews);
+  const maxGrowth = Math.max(...growths, 1);
+  const minGrowth = Math.min(...growths, 0);
+  const maxViews = Math.max(...views, 1);
+  const growthRange = maxGrowth - minGrowth || 1;
+
+  for (const e of entries) {
+    const normGrowth = (e.channel.growthRate30d - minGrowth) / growthRange;
+    const normViews = Math.log10(e.channel.dailyAvgViews + 1) / Math.log10(maxViews + 1);
+    scores.set(e.channel.youtubeId, normGrowth * 0.6 + normViews * 0.4);
+  }
+  return scores;
+}
+
 function sortAndRank(entries: RankingEntry[], type: string): RankingEntry[] {
+  const trendingScores = type === "growth" ? calcTrendingScore(entries) : null;
+
   const sorted = [...entries].sort((a, b) => {
     switch (type) {
       case "subscriber": return b.channel.subscriberCount - a.channel.subscriberCount;
       case "view": return b.channel.dailyAvgViews - a.channel.dailyAvgViews;
-      case "growth": return b.channel.growthRate30d - a.channel.growthRate30d;
+      case "growth": {
+        const aScore = trendingScores!.get(a.channel.youtubeId) ?? 0;
+        const bScore = trendingScores!.get(b.channel.youtubeId) ?? 0;
+        return bScore - aScore;
+      }
       case "revenue": return b.channel.estimatedRevenue - a.channel.estimatedRevenue;
       case "superchat": {
         // Estimate superchat revenue as ~15% of total revenue, weighted by engagement
@@ -199,7 +233,7 @@ function sortAndRank(entries: RankingEntry[], type: string): RankingEntry[] {
     score:
       type === "subscriber" ? entry.channel.subscriberCount
       : type === "view" ? entry.channel.dailyAvgViews
-      : type === "growth" ? entry.channel.growthRate30d
+      : type === "growth" ? Math.round((trendingScores!.get(entry.channel.youtubeId) ?? 0) * 100)
       : type === "revenue" ? entry.channel.estimatedRevenue
       : type === "superchat" ? Math.round(entry.channel.estimatedRevenue * 0.15 * (1 + entry.channel.growthRate30d / 100))
       : entry.channel.estimatedRevenue,

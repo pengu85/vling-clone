@@ -54,7 +54,8 @@ interface ChannelStats {
 async function fetchSimilarChannels(channelId: string): Promise<SimilarChannel[]> {
   const res = await fetch(`/api/monitor/similar?channelId=${channelId}`);
   if (!res.ok) return [];
-  return res.json();
+  const json = await res.json();
+  return json.data ?? [];
 }
 
 /* ---------- Mobile Tab ---------- */
@@ -97,7 +98,8 @@ export default function YoutuberTrackerPage() {
       if (!channelIdList) return {};
       const res = await fetch(`/api/monitor/stats?channelIds=${channelIdList}`);
       if (!res.ok) return {};
-      return res.json();
+      const json = await res.json();
+      return (json.data ?? {}) as Record<string, ChannelStats>;
     },
     enabled: trackedChannels.length > 0,
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -129,7 +131,8 @@ export default function YoutuberTrackerPage() {
         `/api/monitor/videos?channelId=${selectedChannelId}`
       );
       if (!res.ok) return [];
-      return res.json();
+      const json = await res.json();
+      return json.data ?? [];
     },
     enabled: !!selectedChannelId,
     staleTime: 1000 * 60 * 30, // 30분

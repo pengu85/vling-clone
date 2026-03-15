@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
   Loader2,
@@ -131,6 +131,16 @@ const ANALYSIS_CARDS = [
 export function ThumbnailAnalyzer() {
   const [channelInput, setChannelInput] = useState("");
   const [dragOver, setDragOver] = useState(false);
+  const objectUrlRef = useRef<string | null>(null);
+
+  // Cleanup object URL on unmount or when a new one is created
+  useEffect(() => {
+    return () => {
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+      }
+    };
+  }, []);
 
   const mutation = useMutation({
     mutationFn: analyzeThumbnails,
@@ -153,8 +163,13 @@ export function ThumbnailAnalyzer() {
       const file = e.dataTransfer.files[0];
       if (!file || !file.type.startsWith("image/")) return;
 
+      // Revoke previous object URL if any
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+      }
       // Create object URL for preview (in real app, would upload to storage)
       const url = URL.createObjectURL(file);
+      objectUrlRef.current = url;
       mutation.mutate({ imageUrl: url });
     },
     [mutation]

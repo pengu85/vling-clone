@@ -11,9 +11,10 @@ import { GrowthChart } from "@/components/charts/GrowthChart";
 import { useChannelDetail, useChannelVideos } from "@/hooks/useChannelDetail";
 import { useChannelTrends } from "@/hooks/useChannelTrends";
 import { formatNumber, formatGrowthRate, formatCurrency } from "@/lib/formatters";
-import { TrendingUp, Zap, DollarSign, Activity } from "lucide-react";
+import { TrendingUp, Zap, DollarSign, Activity, AlertTriangle } from "lucide-react";
 import { AIInsightPanel } from "@/components/channel/AIInsightPanel";
 import { useRecentStore } from "@/stores/recentStore";
+import { Button } from "@/components/ui/button";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 interface Props {
@@ -68,7 +69,7 @@ function ChannelDetailSkeleton() {
 export default function ChannelDetailPage({ params }: Props) {
   const { id } = use(params);
 
-  const { data: channelRes, isLoading: channelLoading } = useChannelDetail(id);
+  const { data: channelRes, isLoading: channelLoading, refetch: refetchChannel } = useChannelDetail(id);
   const { data: videosRes, isLoading: videosLoading } = useChannelVideos(id);
   // 90일 데이터 1회만 호출 — 30/60일은 클라이언트에서 슬라이스
   const { data: trendsData90 } = useChannelTrends(id, 90);
@@ -108,8 +109,17 @@ export default function ChannelDetailPage({ params }: Props) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <div className="text-center space-y-3">
+          <AlertTriangle className="mx-auto h-10 w-10 text-red-400" />
           <p className="text-lg font-semibold text-slate-300">채널을 찾을 수 없습니다</p>
           <p className="text-sm text-slate-500">YouTube API 연결을 확인해주세요</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetchChannel()}
+            className="mt-2 border-violet-600 bg-violet-600/10 text-violet-300 hover:bg-violet-600/20"
+          >
+            다시 시도
+          </Button>
         </div>
       </div>
     );

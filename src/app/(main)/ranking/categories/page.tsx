@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BarChart3, TrendingUp, DollarSign, Users, AlertTriangle } from "lucide-react";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   BarChart,
@@ -49,8 +50,9 @@ export default function CategoryTrendsPage() {
   const totalChannels = categories ? categories.reduce((s, c) => s + c.channels, 0) : 0;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="text-slate-100">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <Breadcrumb items={[{ label: "랭킹", href: "/ranking/subscriber" }, { label: "카테고리" }]} />
         {/* 헤더 */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-1">

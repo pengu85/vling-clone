@@ -16,6 +16,7 @@ import { Pagination } from "@/components/ranking/Pagination";
 import { useRanking } from "@/hooks/useRanking";
 import { CATEGORIES } from "@/domain/categories";
 import { cn } from "@/lib/utils";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import type { RankType } from "@/types";
 import { useRouter } from "next/navigation";
 
@@ -77,8 +78,9 @@ export default function RankingTypePage({ params }: PageProps) {
   const activeTab = RANK_TABS.find((t) => t.value === rankType);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="text-slate-100">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <Breadcrumb items={[{ label: "랭킹", href: "/ranking/subscriber" }, { label: activeTab?.label ?? rankType }]} />
         {/* 헤더 */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-100">

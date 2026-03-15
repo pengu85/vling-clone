@@ -9,7 +9,7 @@ import { useChannelSearch } from "@/hooks/useChannelSearch";
 import type { SearchFilters as SearchFiltersType } from "@/hooks/useChannelSearch";
 import type { ChannelSearchResult } from "@/types";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2, SearchX } from "lucide-react";
+import { AlertTriangle, Download, Loader2, SearchX } from "lucide-react";
 import { channelsToCSV, downloadCSV } from "@/lib/csv";
 import { SearchHistory } from "@/components/search/SearchHistory";
 import { useSearchHistoryStore } from "@/stores/searchHistoryStore";
@@ -39,7 +39,7 @@ export default function SearchPage() {
   const [allResults, setAllResults] = useState<ChannelSearchResult[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const { data, isLoading, isFetching } = useChannelSearch(filters);
+  const { data, isLoading, isFetching, isError, refetch } = useChannelSearch(filters);
   const addQuery = useSearchHistoryStore((s) => s.addQuery);
 
   const total = data?.pagination?.total ?? 0;
@@ -261,8 +261,29 @@ export default function SearchPage() {
           </div>
         )}
 
+        {/* 에러 상태 */}
+        {isError && (
+          <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+            <AlertTriangle className="mb-3 h-10 w-10 text-red-400" />
+            <p className="text-sm font-medium text-slate-300">
+              검색 중 오류가 발생했습니다
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              잠시 후 다시 시도해주세요.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              className="mt-4 border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700"
+            >
+              다시 시도
+            </Button>
+          </div>
+        )}
+
         {/* 빈 결과 */}
-        {!isLoading && channels.length === 0 && (
+        {!isLoading && !isError && channels.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-slate-500">
             <SearchX className="mb-3 h-10 w-10 text-slate-600" />
             <p className="text-sm font-medium text-slate-400">

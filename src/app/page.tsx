@@ -16,6 +16,12 @@ import {
   Zap,
   Globe,
   Target,
+  Palette,
+  Gamepad2,
+  GraduationCap,
+  UtensilsCrossed,
+  Plane,
+  Cpu,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -100,13 +106,13 @@ const stats = [
   { label: "광고주 파트너", value: "500+" },
 ]
 
-const logos = [
-  "브랜드 A",
-  "브랜드 B",
-  "브랜드 C",
-  "브랜드 D",
-  "브랜드 E",
-  "브랜드 F",
+const industryCategories = [
+  { label: "뷰티", icon: Palette },
+  { label: "게임", icon: Gamepad2 },
+  { label: "교육", icon: GraduationCap },
+  { label: "음식", icon: UtensilsCrossed },
+  { label: "여행", icon: Plane },
+  { label: "테크", icon: Cpu },
 ]
 
 const tabItems = [
@@ -428,19 +434,20 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── 이용 고객 로고 ── */}
+      {/* ── 활용 분야 ── */}
       <section className="border-y border-slate-800 bg-slate-900 py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <p className="mb-8 text-center text-sm text-slate-500">
-            이미 많은 기업이 블링을 사용하고 있습니다
+            다양한 브랜드가 블링을 활용하고 있습니다
           </p>
           <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10">
-            {logos.map((name) => (
+            {industryCategories.map(({ label, icon: Icon }) => (
               <div
-                key={name}
-                className="flex h-10 w-24 items-center justify-center rounded-lg border border-slate-700 bg-slate-800 text-xs font-medium text-slate-500 shadow-sm"
+                key={label}
+                className="flex h-10 items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-4 text-xs font-medium text-slate-400 shadow-sm"
               >
-                {name}
+                <Icon className="h-4 w-4 text-slate-500" />
+                {label}
               </div>
             ))}
           </div>

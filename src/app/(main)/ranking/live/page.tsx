@@ -6,6 +6,7 @@ import { Radio, ExternalLink, AlertTriangle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatNumber } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 interface LiveStreamItem {
   rank: number;
@@ -46,8 +47,9 @@ export default function LiveRankingPage() {
   const items = data?.data ?? [];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="text-slate-100">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <Breadcrumb items={[{ label: "랭킹", href: "/ranking/subscriber" }, { label: "실시간" }]} />
         {/* Header */}
         <div className="mb-6 flex items-center gap-2">
           <Radio className="size-6 text-red-400" />

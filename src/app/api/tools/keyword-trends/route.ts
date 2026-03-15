@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { youtubeClient } from "@/lib/youtube";
+import { cache } from "@/lib/cache";
 
 /* ---------- Types ---------- */
 
@@ -9,12 +10,13 @@ interface KeywordDetail {
   avgViews: number;
   competition: "높음" | "중간" | "낮음";
   suggestedTitles: string[];
-  timeline: Array<{ label: string; videos: number; views: number }>;
+  timeline: Array<{ label: string; videos: number; views: number; isEstimated?: boolean }>;
 }
 
 interface RelatedKeyword {
   keyword: string;
   score: number;
+  isEstimated?: boolean;
 }
 
 interface KeywordTrendsResponse {
@@ -96,6 +98,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Cache check
+    const cacheKey = `keyword-trends:v1:${keywords.join(",")}`;
+    const cached = await cache.get<KeywordTrendsResponse>(cacheKey);
+    if (cached) {
+      return NextResponse.json({ data: cached });
+    }
+
     const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
     if (!YOUTUBE_API_KEY) {
       return NextResponse.json(
@@ -171,6 +180,7 @@ export async function POST(request: NextRequest) {
               const variation = (((seed + ti * 7) % 20) - 10) / 100;
               timeline[ti].videos = Math.max(0, Math.round(perBucket * (1 + variation)));
               timeline[ti].views = Math.max(0, Math.round(viewsPerBucket * (1 + variation)));
+              timeline[ti].isEstimated = true;
             }
           }
 
@@ -194,7 +204,7 @@ export async function POST(request: NextRequest) {
 
         if (suggestedTitles.length === 0) {
           suggestedTitles.push(
-            `${keyword} 완벽 가이드 (2025)`,
+            `${keyword} 완벽 가이드 (${new Date().getFullYear()})`,
             `${keyword} 초보자를 위한 꿀팁`,
             `${keyword} 현실적인 후기`
           );
@@ -232,6 +242,7 @@ export async function POST(request: NextRequest) {
       .map((tag, idx) => ({
         keyword: tag,
         score: Math.round(90 - idx * 5),
+        isEstimated: true,
       }))
       .sort((a, b) => b.score - a.score);
 
@@ -246,6 +257,7 @@ export async function POST(request: NextRequest) {
             relatedKeywords.push({
               keyword: candidate,
               score: Math.max(30, 70 - relatedKeywords.length * 4),
+              isEstimated: true,
             });
           }
         }
@@ -256,6 +268,8 @@ export async function POST(request: NextRequest) {
       keywords: keywordDetails,
       relatedKeywords: relatedKeywords.slice(0, 10),
     };
+
+    await cache.set(cacheKey, response, 3600);
 
     return NextResponse.json({ data: response });
   } catch {

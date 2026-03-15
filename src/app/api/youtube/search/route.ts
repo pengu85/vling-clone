@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { youtubeClient, extractCategory } from "@/lib/youtube";
 import type { SearchChannelsOptions } from "@/lib/youtube";
-import { calculateChannelAlgoScore } from "@/domain/algoScore";
+import { calculateChannelAlgoScore, DEFAULT_AVG_LIKE_RATE, DEFAULT_AVG_COMMENT_RATE } from "@/domain/algoScore";
 import { estimateMonthlyRevenue } from "@/domain/revenueEstimate";
 import { calculateGrowthRate } from "@/domain/growthRate";
 import type { ChannelSearchResult } from "@/types";
@@ -98,8 +98,8 @@ export async function GET(request: NextRequest) {
       const overallAvgViews = videoCount > 0 ? viewCount / videoCount : 0;
 
       const avgViewsPerVideo = overallAvgViews;
-      const avgLikeRate = 0.03;
-      const avgCommentRate = 0.005;
+      const avgLikeRate = DEFAULT_AVG_LIKE_RATE;
+      const avgCommentRate = DEFAULT_AVG_COMMENT_RATE;
       const recentVideoCount = 0;
 
       const dailyAvgViews = Math.round(overallAvgViews / 30);

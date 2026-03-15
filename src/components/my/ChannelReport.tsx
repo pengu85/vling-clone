@@ -646,7 +646,8 @@ export function ChannelReport() {
     queryFn: async () => {
       const res = await fetch(`/api/monitor/videos?channelId=${channelId}`);
       if (!res.ok) return [];
-      const items = await res.json();
+      const json = await res.json();
+      const items = json.data ?? [];
       // Map API response to Video type
       return (items as Array<{
         id: string;

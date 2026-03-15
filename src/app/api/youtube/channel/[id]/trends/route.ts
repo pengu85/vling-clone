@@ -46,7 +46,7 @@ export async function GET(
   const cacheKey = `channel-trends:${id}:${period}`;
   const cached = await cache.get<TrendsResponse>(cacheKey);
   if (cached) {
-    return NextResponse.json(cached);
+    return NextResponse.json({ data: cached });
   }
 
   try {
@@ -55,7 +55,7 @@ export async function GET(
     const searchRes = await youtubeClient.getChannelVideos(id, maxResults);
 
     if (!searchRes.items || searchRes.items.length === 0) {
-      return NextResponse.json({ viewTrend: [], growthTrend: [] });
+      return NextResponse.json({ data: { viewTrend: [], growthTrend: [] } });
     }
 
     // Extract video IDs
@@ -64,14 +64,14 @@ export async function GET(
       .filter((vid): vid is string => Boolean(vid));
 
     if (videoIds.length === 0) {
-      return NextResponse.json({ viewTrend: [], growthTrend: [] });
+      return NextResponse.json({ data: { viewTrend: [], growthTrend: [] } });
     }
 
     // Fetch detailed stats for each video
     const detailsRes = await youtubeClient.getVideoDetails(videoIds);
 
     if (!detailsRes.items || detailsRes.items.length === 0) {
-      return NextResponse.json({ viewTrend: [], growthTrend: [] });
+      return NextResponse.json({ data: { viewTrend: [], growthTrend: [] } });
     }
 
     // Filter to videos within the requested period
@@ -135,7 +135,7 @@ export async function GET(
     // Cache for 1 hour
     await cache.set(cacheKey, result, 3600);
 
-    return NextResponse.json(result);
+    return NextResponse.json({ data: result });
   } catch (error) {
     console.error("Channel trends error:", error);
     return NextResponse.json(

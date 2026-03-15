@@ -14,6 +14,7 @@ const CPM_BY_COUNTRY: Record<string, number> = {
 const CPM_MULTIPLIER_BY_CATEGORY: Record<string, number> = {
   tech: 1.5, education: 1.3, beauty: 1.2, food: 1.1,
   gaming: 0.9, entertainment: 0.8, music: 0.7, kids: 0.6,
+  autos: 1.3, film: 1.1, howto: 1.4, science: 1.3, lifestyle: 1.2, health: 1.5,
   default: 1.0,
 };
 

@@ -2,10 +2,12 @@ import Link from "next/link";
 import { CampaignDashboard } from "@/components/campaign/CampaignDashboard";
 import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function CampaignManagePage() {
   return (
     <div className="px-4 py-8">
+      <Breadcrumb items={[{ label: "캠페인 관리" }]} />
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-100">캠페인 관리</h1>

@@ -75,6 +75,7 @@ export async function GET(
         channelId: id,
         channelTitle: ch.snippet.title,
         isEstimated: true,
+        disclaimer: "YouTube API에서 인구통계 데이터를 제공하지 않아, 카테고리 기반 업계 평균 추정치입니다",
         maleRatio: demo.maleRatio,
         femaleRatio: demo.femaleRatio,
         ageDistribution: demo.ageDistribution,

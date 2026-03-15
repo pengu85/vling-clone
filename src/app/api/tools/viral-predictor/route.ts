@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { youtubeClient } from "@/lib/youtube";
+import { cache } from "@/lib/cache";
 
 /* ---------- Types ---------- */
 
@@ -228,6 +229,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const cacheKey = `viral-predictor:v1:${videoId}`;
+    const cached = await cache.get<ViralPrediction>(cacheKey);
+    if (cached) {
+      return NextResponse.json({ data: cached });
+    }
+
     let prediction!: ViralPrediction;
 
     try {
@@ -291,6 +298,8 @@ export async function POST(request: NextRequest) {
         { status: 502 }
       );
     }
+
+    await cache.set(cacheKey, prediction, 3600);
 
     return NextResponse.json({ data: prediction });
   } catch {

@@ -174,6 +174,18 @@ function buildTimeline(dates: number[]): TrendTimelinePoint[] {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    if (body.category !== undefined && typeof body.category !== "string") {
+      return NextResponse.json(
+        { error: { code: "INVALID_INPUT", message: "category는 문자열이어야 합니다" } },
+        { status: 400 }
+      );
+    }
+    if (body.region !== undefined && typeof body.region !== "string") {
+      return NextResponse.json(
+        { error: { code: "INVALID_INPUT", message: "region은 문자열이어야 합니다" } },
+        { status: 400 }
+      );
+    }
     const category: string = body.category || "전체";
     const region: string = body.region || "한국";
 

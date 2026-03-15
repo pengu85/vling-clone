@@ -3,12 +3,14 @@
 import { Star } from "lucide-react";
 import { FavoriteManager } from "@/components/favorites/FavoriteManager";
 import { useFavorites } from "@/hooks/useFavorites";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function FavoritesPage() {
   const { totalCount } = useFavorites();
 
   return (
     <div className="space-y-5">
+      <Breadcrumb items={[{ label: "즐겨찾기" }]} />
       {/* 헤더 */}
       <div className="flex items-center gap-3">
         <Star className="h-5 w-5 text-yellow-400 fill-yellow-400" />

@@ -84,7 +84,7 @@ export default function TrendingPage() {
   const items = data?.data ?? [];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="text-slate-100">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <Breadcrumb items={[{ label: "트렌딩" }]} />
         {/* Header */}

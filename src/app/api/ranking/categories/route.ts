@@ -29,42 +29,44 @@ const CACHE_KEY = "category-trends:v1";
 const CACHE_TTL_SECONDS = 3600;
 
 async function fetchCategoryTrends(): Promise<CategoryTrendData[]> {
-  const results: CategoryTrendData[] = [];
+  const entries = Object.entries(CATEGORY_CONFIG);
 
-  for (const [name, config] of Object.entries(CATEGORY_CONFIG)) {
-    const searchRes = await youtubeClient.searchChannels(config.keyword, 10, {
-      regionCode: "KR",
-      relevanceLanguage: "ko",
-    });
+  const results = await Promise.all(
+    entries.map(async ([name, config]): Promise<CategoryTrendData | null> => {
+      const searchRes = await youtubeClient.searchChannels(config.keyword, 10, {
+        regionCode: "KR",
+        relevanceLanguage: "ko",
+      });
 
-    const channelIds = searchRes.items
-      .map((item) => item.id.channelId ?? item.snippet.channelId)
-      .filter(Boolean);
+      const channelIds = searchRes.items
+        .map((item) => item.id.channelId ?? item.snippet.channelId)
+        .filter(Boolean);
 
-    if (channelIds.length === 0) continue;
+      if (channelIds.length === 0) return null;
 
-    const detailRes = await youtubeClient.getChannel(channelIds.join(","));
-    const subscriberCounts = detailRes.items.map(
-      (item) => parseInt(item.statistics.subscriberCount ?? "0", 10) || 0
-    );
+      const detailRes = await youtubeClient.getChannel(channelIds.join(","));
+      const subscriberCounts = detailRes.items.map(
+        (item) => parseInt(item.statistics.subscriberCount ?? "0", 10) || 0
+      );
 
-    const estimatedChannels = searchRes.pageInfo.totalResults ?? channelIds.length * 100;
+      const estimatedChannels = searchRes.pageInfo.totalResults ?? channelIds.length * 100;
 
-    const avgSubs = subscriberCounts.reduce((a, b) => a + b, 0) / subscriberCounts.length;
-    const variance = subscriberCounts.reduce((sum, s) => sum + Math.pow(s - avgSubs, 2), 0) / subscriberCounts.length;
-    const cv = Math.sqrt(variance) / (avgSubs || 1);
-    const growth = parseFloat((cv * 20 - 2).toFixed(1));
+      const avgSubs = subscriberCounts.reduce((a, b) => a + b, 0) / subscriberCounts.length;
+      const variance = subscriberCounts.reduce((sum, s) => sum + Math.pow(s - avgSubs, 2), 0) / subscriberCounts.length;
+      const cv = Math.sqrt(variance) / (avgSubs || 1);
+      const growth = parseFloat((cv * 20 - 2).toFixed(1));
 
-    results.push({
-      name,
-      cpm: config.cpm,
-      growth,
-      channels: Math.min(estimatedChannels, 50000),
-      color: config.color,
-    });
-  }
+      return {
+        name,
+        cpm: config.cpm,
+        growth,
+        channels: Math.min(estimatedChannels, 50000),
+        color: config.color,
+      };
+    })
+  );
 
-  return results;
+  return results.filter((r): r is CategoryTrendData => r !== null);
 }
 
 export async function GET() {

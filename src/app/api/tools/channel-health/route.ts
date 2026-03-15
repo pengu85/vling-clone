@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { youtubeClient } from "@/lib/youtube";
 import { parseChannelInput } from "@/lib/parseChannel";
+import { cache } from "@/lib/cache";
 
 /* ---------- Types ---------- */
 
@@ -254,13 +255,20 @@ function getCategoryAverage(category?: string): CategoryAverage {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { channelId: rawInput } = body as { channelId: string };
+    const rawInput: string = body.channelId || "";
 
     if (!rawInput || rawInput.trim().length === 0) {
       return NextResponse.json(
         { error: { code: "INVALID_INPUT", message: "채널 URL, ID 또는 이름을 입력하세요" } },
         { status: 400 }
       );
+    }
+
+    const channelId = rawInput.trim();
+    const cacheKey = `channel-health:v1:${channelId}`;
+    const cached = await cache.get<HealthResponse>(cacheKey);
+    if (cached) {
+      return NextResponse.json({ data: cached });
     }
 
     const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
@@ -366,6 +374,8 @@ export async function POST(request: NextRequest) {
         average: categoryAvg[item.key as keyof CategoryAverage] || 60,
       })),
     };
+
+    await cache.set(cacheKey, response, 3600);
 
     return NextResponse.json({ data: response });
   } catch (err) {

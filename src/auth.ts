@@ -14,8 +14,9 @@ interface StoredUser {
   createdAt: string
 }
 
-// Pre-hashed password for demo account ("password123")
-const DEMO_PASSWORD_HASH = bcrypt.hashSync("password123", 10)
+// Pre-hashed password for demo account ("password123").
+// Using a hardcoded hash avoids a CPU-intensive synchronous bcrypt call on every cold start.
+const DEMO_PASSWORD_HASH = "$2b$10$rBV9rz.YtJzwUGlRDuLLKu3xPrSmgSzfr.NGiw0TqoALGhw3s31cC"
 
 // NOTE: In-memory store for demo/development only.
 // For production, replace with database (e.g., Prisma + PostgreSQL).

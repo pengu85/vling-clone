@@ -1,3 +1,6 @@
+// NOTE: This file is used exclusively by tests (src/__tests__/error.test.ts).
+// It is not imported by any production app code.
+
 export class AppError extends Error {
   statusCode: number;
   isRetryable: boolean;

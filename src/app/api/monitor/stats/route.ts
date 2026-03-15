@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { youtubeClient } from "@/lib/youtube";
-import { calculateChannelAlgoScore } from "@/domain/algoScore";
+import { calculateChannelAlgoScore, DEFAULT_AVG_LIKE_RATE, DEFAULT_AVG_COMMENT_RATE } from "@/domain/algoScore";
 
 export async function GET(request: NextRequest) {
   const channelIds =
@@ -45,8 +45,8 @@ export async function GET(request: NextRequest) {
       const algoScore = calculateChannelAlgoScore({
         avgViewsPerVideo: videoCount > 0 ? viewCount / videoCount : 0,
         subscriberCount,
-        avgLikeRate: 0.03,
-        avgCommentRate: 0.005,
+        avgLikeRate: DEFAULT_AVG_LIKE_RATE,
+        avgCommentRate: DEFAULT_AVG_COMMENT_RATE,
         videoCount,
         recentVideoCount: 0,
       });
@@ -64,9 +64,12 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    return NextResponse.json(stats);
+    return NextResponse.json({ data: stats });
   } catch (error) {
     console.error("Monitor stats error:", error);
-    return NextResponse.json({}, { status: 500 });
+    return NextResponse.json(
+      { error: { code: "INTERNAL_ERROR", message: "통계 데이터 로딩 실패" } },
+      { status: 500 }
+    );
   }
 }

@@ -1,9 +1,11 @@
 import { BarChart2 } from "lucide-react";
 import { ChannelReport } from "@/components/my/ChannelReport";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function ChannelReportPage() {
   return (
     <div className="space-y-5">
+      <Breadcrumb items={[{ label: "채널 리포트" }]} />
       {/* 헤더 */}
       <div className="flex items-start gap-3">
         <BarChart2 className="h-5 w-5 text-indigo-400 mt-0.5 shrink-0" />

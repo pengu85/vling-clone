@@ -7,6 +7,12 @@ import {
   Check,
   X,
   ArrowLeft,
+  Palette,
+  Gamepad2,
+  GraduationCap,
+  UtensilsCrossed,
+  Plane,
+  Cpu,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -62,13 +68,13 @@ const COMPARISON_FEATURES: Array<{
   { feature: "세금계산서 발행", professional: false, enterprise: true },
 ]
 
-const CUSTOMER_LOGOS = [
-  "브랜드 A",
-  "브랜드 B",
-  "브랜드 C",
-  "브랜드 D",
-  "브랜드 E",
-  "브랜드 F",
+const INDUSTRY_CATEGORIES = [
+  { label: "뷰티", icon: Palette },
+  { label: "게임", icon: Gamepad2 },
+  { label: "교육", icon: GraduationCap },
+  { label: "음식", icon: UtensilsCrossed },
+  { label: "여행", icon: Plane },
+  { label: "테크", icon: Cpu },
 ]
 
 function ComparisonCell({ value }: { value: string | boolean }) {
@@ -183,19 +189,20 @@ export default function EnterprisePage() {
         </div>
       </section>
 
-      {/* ── 고객사 로고 ── */}
+      {/* ── 활용 분야 ── */}
       <section className="border-t border-slate-800 py-16 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-5xl">
           <p className="mb-8 text-center text-sm text-slate-500">
-            이미 많은 기업이 블링 엔터프라이즈를 사용하고 있습니다
+            다양한 브랜드가 블링 엔터프라이즈를 활용하고 있습니다
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
-            {CUSTOMER_LOGOS.map((name) => (
+            {INDUSTRY_CATEGORIES.map(({ label, icon: Icon }) => (
               <div
-                key={name}
-                className="flex h-12 w-28 items-center justify-center rounded-xl border border-slate-700 bg-slate-800 text-xs font-medium text-slate-500"
+                key={label}
+                className="flex h-12 items-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-5 text-xs font-medium text-slate-400"
               >
-                {name}
+                <Icon className="h-4 w-4 text-slate-500" />
+                {label}
               </div>
             ))}
           </div>

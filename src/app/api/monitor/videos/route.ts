@@ -36,7 +36,7 @@ export async function GET(request: Request) {
       .map((item) => item.id.videoId)
       .filter((id): id is string => !!id);
 
-    if (videoIds.length === 0) return NextResponse.json([]);
+    if (videoIds.length === 0) return NextResponse.json({ data: [] });
 
     // Step 2: 영상 상세 (조회수, 좋아요, duration)
     const details = await youtubeClient.getVideoDetails(videoIds);
@@ -54,9 +54,12 @@ export async function GET(request: Request) {
       viewsGrowth: 0,
     }));
 
-    return NextResponse.json(videos);
+    return NextResponse.json({ data: videos });
   } catch (error) {
     console.error("Monitor videos API error:", error);
-    return NextResponse.json([]);
+    return NextResponse.json(
+      { error: { code: "INTERNAL_ERROR", message: "비디오 모니터링 데이터 로딩 실패" } },
+      { status: 500 }
+    );
   }
 }

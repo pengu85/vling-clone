@@ -186,31 +186,26 @@ export async function POST(request: NextRequest) {
         .filter((id): id is string => !!id && id !== resolvedId)
         .slice(0, 5);
 
-      for (const simId of similarIds) {
-        try {
-          const simInfo = await youtubeClient.getChannel(simId);
-          if (simInfo.items && simInfo.items.length > 0) {
-            const sim = simInfo.items[0];
-            const simSubs = parseInt(sim.statistics.subscriberCount) || 0;
-            const simTotalViews = parseInt(sim.statistics.viewCount) || 0;
-            const simVideoCount = parseInt(sim.statistics.videoCount) || 1;
-            const simDailyViews = Math.round(
-              simTotalViews / simVideoCount / 30
-            );
-            similarChannels.push({
-              id: sim.id,
-              name: sim.snippet.title,
-              thumbnail: sim.snippet.thumbnails.high.url,
-              subscribers: simSubs,
-              estimatedMonthlyRevenue: estimateMonthlyRevenue({
-                dailyViews: simDailyViews,
-                country: "KR",
-                category,
-              }),
-            });
-          }
-        } catch {
-          // skip individual channel errors
+      if (similarIds.length > 0) {
+        const simInfo = await youtubeClient.getChannel(similarIds.join(","));
+        for (const sim of simInfo.items || []) {
+          const simSubs = parseInt(sim.statistics.subscriberCount) || 0;
+          const simTotalViews = parseInt(sim.statistics.viewCount) || 0;
+          const simVideoCount = parseInt(sim.statistics.videoCount) || 1;
+          const simDailyViews = Math.round(
+            simTotalViews / simVideoCount / 30
+          );
+          similarChannels.push({
+            id: sim.id,
+            name: sim.snippet.title,
+            thumbnail: sim.snippet.thumbnails.high.url,
+            subscribers: simSubs,
+            estimatedMonthlyRevenue: estimateMonthlyRevenue({
+              dailyViews: simDailyViews,
+              country: "KR",
+              category,
+            }),
+          });
         }
       }
     } catch {

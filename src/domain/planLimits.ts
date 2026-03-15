@@ -81,14 +81,3 @@ export const PLAN_LIMITS: Record<PlanTier, PlanLimit> = {
     apiAccess: true,
   },
 };
-
-export function getPlanLimit(plan: PlanTier): PlanLimit {
-  return PLAN_LIMITS[plan];
-}
-
-export function canAccess(plan: PlanTier, feature: keyof PlanLimit): boolean {
-  const limit = PLAN_LIMITS[plan];
-  const value = limit[feature];
-  if (typeof value === 'boolean') return value;
-  return value > 0;
-}

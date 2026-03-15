@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { youtubeClient } from "@/lib/youtube";
 import { parseChannelInput } from "@/lib/parseChannel";
+import { cache } from "@/lib/cache";
 
 /* ---------- Types ---------- */
 
@@ -47,6 +48,8 @@ interface CollabResponse {
   similarCaseStats: {
     avgViewIncrease: number;
     successRate: number;
+    isEstimated: boolean;
+    disclaimer: string;
   };
 }
 
@@ -347,12 +350,22 @@ async function fetchChannelStats(channelId: string): Promise<ChannelStats> {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { channelA: rawA, channelB: rawB } = body as {
-      channelA: string;
-      channelB: string;
-    };
+    const rawA = body.channelA;
+    const rawB = body.channelB;
 
-    if (!rawA?.trim() || !rawB?.trim()) {
+    if (typeof rawA !== "string" || typeof rawB !== "string") {
+      return NextResponse.json(
+        {
+          error: {
+            code: "INVALID_INPUT",
+            message: "channelA와 channelB는 문자열이어야 합니다",
+          },
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!rawA.trim() || !rawB.trim()) {
       return NextResponse.json(
         {
           error: {
@@ -362,6 +375,14 @@ export async function POST(request: NextRequest) {
         },
         { status: 400 }
       );
+    }
+
+    // Cache check
+    const sortedIds = [rawA.trim(), rawB.trim()].sort().join(",");
+    const cacheKey = `collab-score:v1:${sortedIds}`;
+    const cached = await cache.get<CollabResponse>(cacheKey);
+    if (cached) {
+      return NextResponse.json({ data: cached });
     }
 
     let statsA: ChannelStats;
@@ -412,6 +433,8 @@ export async function POST(request: NextRequest) {
     const similarCaseStats = {
       avgViewIncrease: Math.round(120 + totalScore * 1.5),
       successRate: Math.round(50 + totalScore * 0.4),
+      isEstimated: true,
+      disclaimer: "실제 협업 사례가 아닌 점수 기반 추정치입니다",
     };
 
     const response: CollabResponse = {
@@ -423,6 +446,8 @@ export async function POST(request: NextRequest) {
       expectedEffect,
       similarCaseStats,
     };
+
+    await cache.set(cacheKey, response, 3600);
 
     return NextResponse.json({ data: response });
   } catch (err) {

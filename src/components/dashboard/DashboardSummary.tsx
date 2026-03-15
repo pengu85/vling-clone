@@ -10,11 +10,13 @@ import {
   Clock,
   TrendingUp,
   Bell,
+  Eye,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useFavoriteStore } from "@/stores/favoriteStore";
 import { useRecentStore } from "@/stores/recentStore";
 import { useAlertStore } from "@/stores/alertStore";
+import { useMonitorStore } from "@/stores/monitorStore";
 
 interface QuickActionProps {
   href: string;
@@ -46,6 +48,7 @@ export function DashboardSummary() {
   const favoriteCount = useFavoriteStore((s) => s.favorites.length);
   const recentCount = useRecentStore((s) => s.recentChannels.length);
   const alertCount = useAlertStore((s) => s.alerts.length);
+  const monitorCount = useMonitorStore((s) => s.trackedChannels.length);
 
   return (
     <div className="space-y-5">
@@ -83,11 +86,11 @@ export function DashboardSummary() {
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center gap-3">
               <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-emerald-500/10">
-                <TrendingUp className="h-4 w-4 text-emerald-400" />
+                <Eye className="h-4 w-4 text-emerald-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-slate-100">{favoriteCount}</p>
-                <p className="text-xs text-slate-500">즐겨찾기 채널</p>
+                <p className="text-2xl font-bold text-slate-100">{monitorCount}</p>
+                <p className="text-xs text-slate-500">모니터링 채널</p>
               </div>
             </div>
           </CardContent>

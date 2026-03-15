@@ -7,9 +7,19 @@ import { useCampaignStore } from "@/stores/campaignStore";
 import { CampaignForm } from "@/components/campaign/CampaignForm";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/formatters";
 import { CATEGORIES } from "@/domain/categories";
 import type { Campaign, CampaignStatus } from "@/types/campaign";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import {
   ArrowLeftIcon,
   CalendarIcon,
@@ -111,6 +121,7 @@ export default function CampaignDetailPage() {
   const campaign = getCampaign(id);
 
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   if (!campaign) {
     return (
@@ -137,10 +148,13 @@ export default function CampaignDetailPage() {
   }
 
   function handleDelete() {
-    if (confirm(`"${campaign!.title}" 캠페인을 삭제하시겠습니까?`)) {
-      deleteCampaign(id);
-      router.push("/campaign/manage");
-    }
+    setShowDeleteDialog(true);
+  }
+
+  function confirmDelete() {
+    deleteCampaign(id);
+    setShowDeleteDialog(false);
+    router.push("/campaign/manage");
   }
 
   function handleEditSubmit(
@@ -184,6 +198,7 @@ export default function CampaignDetailPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
+      <Breadcrumb items={[{ label: "캠페인", href: "/campaign/manage" }, { label: "상세" }]} />
       {/* Header */}
       <div className="mb-6 flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -217,6 +232,7 @@ export default function CampaignDetailPage() {
             size="icon-sm"
             render={<Link href={`/campaign/${id}?edit=true`} />}
             className="text-slate-400 hover:text-slate-200"
+            aria-label="수정"
           >
             <PencilIcon />
           </Button>
@@ -225,6 +241,7 @@ export default function CampaignDetailPage() {
             size="icon-sm"
             onClick={handleDelete}
             className="text-red-400 hover:text-red-300"
+            aria-label="삭제"
           >
             <Trash2Icon />
           </Button>
@@ -324,6 +341,36 @@ export default function CampaignDetailPage() {
           {new Date(campaign.updatedAt).toLocaleDateString("ko-KR")}
         </span>
       </div>
+
+      {/* 삭제 확인 다이얼로그 */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="bg-slate-900 border-slate-700">
+          <DialogHeader>
+            <DialogTitle className="text-slate-100">삭제 확인</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              이 캠페인을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose
+              render={
+                <Button
+                  variant="outline"
+                  className="border-slate-700 text-slate-300 hover:bg-slate-800"
+                />
+              }
+            >
+              취소
+            </DialogClose>
+            <Button
+              onClick={confirmDelete}
+              className="bg-red-600 text-white hover:bg-red-500"
+            >
+              삭제
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -142,7 +142,7 @@ export async function GET(request: NextRequest) {
   const cacheKey = `similar-channels:v2:${channelId}`;
   const cached = await cache.get<SimilarChannelResult[]>(cacheKey);
   if (cached) {
-    return NextResponse.json(cached);
+    return NextResponse.json({ data: cached });
   }
 
   try {
@@ -150,7 +150,7 @@ export async function GET(request: NextRequest) {
 
     const sourceInfo = await youtubeClient.getChannel(channelId);
     if (!sourceInfo.items?.length) {
-      return NextResponse.json([]);
+      return NextResponse.json({ data: [] });
     }
 
     const source = sourceInfo.items[0];
@@ -228,7 +228,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (hitMap.size === 0) {
-      return NextResponse.json([]);
+      return NextResponse.json({ data: [] });
     }
 
     // Sort candidates by hit count, take top 20 for detail fetch
@@ -242,7 +242,7 @@ export async function GET(request: NextRequest) {
     const detailsRes = await youtubeClient.getChannel(candidateIds.join(","));
 
     if (!detailsRes.items?.length) {
-      return NextResponse.json([]);
+      return NextResponse.json({ data: [] });
     }
 
     const results: SimilarChannelResult[] = detailsRes.items
@@ -285,7 +285,7 @@ export async function GET(request: NextRequest) {
     // Cache for 2 hours
     await cache.set(cacheKey, results, 7200);
 
-    return NextResponse.json(results);
+    return NextResponse.json({ data: results });
   } catch (error) {
     console.error("Similar channels error:", error);
     return NextResponse.json(

@@ -9,7 +9,12 @@ export const cache = {
       memoryCache.delete(key);
       return null;
     }
-    return JSON.parse(entry.data) as T;
+    try {
+      return JSON.parse(entry.data) as T;
+    } catch {
+      memoryCache.delete(key);
+      return null;
+    }
   },
 
   async set(key: string, data: unknown, ttlSeconds = 3600): Promise<void> {

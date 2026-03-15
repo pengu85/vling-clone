@@ -1,3 +1,6 @@
+export const DEFAULT_AVG_LIKE_RATE = 0.035;
+export const DEFAULT_AVG_COMMENT_RATE = 0.005;
+
 export interface AlgoScoreInput {
   viewCount: number;
   likeCount: number;

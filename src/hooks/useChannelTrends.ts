@@ -19,7 +19,8 @@ interface ChannelTrendsData {
 async function fetchChannelTrends(id: string, period: number): Promise<ChannelTrendsData> {
   const res = await fetch(`/api/youtube/channel/${id}/trends?period=${period}`);
   if (!res.ok) throw new Error("트렌드 데이터 로딩 실패");
-  return res.json();
+  const json = await res.json();
+  return json.data as ChannelTrendsData;
 }
 
 export function useChannelTrends(id: string, period = 30) {

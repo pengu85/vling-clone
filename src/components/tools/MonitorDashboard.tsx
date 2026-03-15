@@ -397,7 +397,8 @@ export function MonitorDashboard() {
       if (!channelIdList) return {};
       const res = await fetch(`/api/monitor/stats?channelIds=${channelIdList}`);
       if (!res.ok) return {};
-      return res.json() as Promise<Record<string, ChannelStats>>;
+      const json = await res.json();
+      return (json.data ?? {}) as Record<string, ChannelStats>;
     },
     enabled: trackedChannels.length > 0,
     staleTime: 1000 * 60 * 5,
@@ -423,7 +424,8 @@ export function MonitorDashboard() {
     queryFn: async () => {
       const res = await fetch(`/api/monitor/videos?channelId=${selectedChannelId}`);
       if (!res.ok) return [];
-      return res.json();
+      const json = await res.json();
+      return json.data ?? [];
     },
     enabled: !!selectedChannelId,
     staleTime: 1000 * 60 * 30,
@@ -434,7 +436,8 @@ export function MonitorDashboard() {
     queryFn: async () => {
       const res = await fetch(`/api/monitor/similar?channelId=${selectedChannelId}`);
       if (!res.ok) return [];
-      return res.json();
+      const json = await res.json();
+      return json.data ?? [];
     },
     enabled: !!selectedChannelId,
     staleTime: 1000 * 60 * 60,
