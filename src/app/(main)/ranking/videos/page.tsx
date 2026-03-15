@@ -49,12 +49,6 @@ const VIDEO_TABS = [
   { value: "shorts" as const, label: "Shorts", icon: Smartphone },
 ];
 
-const PERIOD_OPTIONS = [
-  { value: "daily", label: "일간" },
-  { value: "weekly", label: "주간" },
-  { value: "monthly", label: "월간" },
-];
-
 function formatDuration(isoDuration: string): string {
   const match = isoDuration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
   if (!match) return "0:00";
@@ -77,16 +71,14 @@ const LIMIT = 20;
 export default function VideoRankingPage() {
   const [videoType, setVideoType] = useState<"longform" | "shorts">("longform");
   const [category, setCategory] = useState("all");
-  const [period, setPeriod] = useState("daily");
   const [page, setPage] = useState(1);
 
   const { data, isLoading, isError, refetch } = useQuery<VideoRankingResponse>({
-    queryKey: ["video-ranking", videoType, category, period, page],
+    queryKey: ["video-ranking", videoType, category, page],
     queryFn: async () => {
       const params = new URLSearchParams({
         type: videoType,
         category,
-        period,
         page: String(page),
         limit: String(LIMIT),
       });
@@ -154,18 +146,6 @@ export default function VideoRankingPage() {
             </SelectContent>
           </Select>
 
-          <Select value={period} onValueChange={(v) => { setPeriod(v ?? "daily"); setPage(1); }}>
-            <SelectTrigger className="h-8 w-24 border-slate-700 bg-slate-800 text-slate-300 text-xs">
-              <SelectValue placeholder="기간" />
-            </SelectTrigger>
-            <SelectContent>
-              {PERIOD_OPTIONS.map((p) => (
-                <SelectItem key={p.value} value={p.value} className="text-xs">
-                  {p.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
 
         {/* Table */}

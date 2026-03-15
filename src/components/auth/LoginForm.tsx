@@ -214,7 +214,7 @@ export function LoginForm() {
           type="button"
           variant="outline"
           className="w-full h-10 bg-yellow-400/10 border-yellow-400/30 text-yellow-300 hover:bg-yellow-400/20 hover:text-yellow-200 gap-2"
-          onClick={() => console.log("Kakao 로그인 (미구현)")}
+          onClick={() => toast("카카오 로그인은 곧 지원 예정입니다", "info")}
         >
           <span className="text-base leading-none font-bold">K</span>
           Kakao로 계속하기

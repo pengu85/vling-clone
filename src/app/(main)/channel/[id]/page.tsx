@@ -145,18 +145,12 @@ export default function ChannelDetailPage({ params }: Props) {
           {/* 개요 탭 */}
           <TabsContent value="overview">
             <div className="space-y-6">
-              {/* 구독자/조회수 추이 차트 */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <StatsChart
-                  title="구독자 추이"
-                  color="#6366f1"
-                />
-                <StatsChart
-                  title="조회수 추이"
-                  color="#8b5cf6"
-                  data={allViewTrend}
-                />
-              </div>
+              {/* 조회수 추이 차트 */}
+              <StatsChart
+                title="조회수 추이"
+                color="#8b5cf6"
+                data={allViewTrend}
+              />
 
               {/* 주요 지표 카드 4개 */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

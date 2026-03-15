@@ -44,12 +44,19 @@ export async function POST(request: NextRequest) {
   const newCampaign: Campaign = {
     id: `camp-${Date.now()}`,
     userId: authResult.session.user?.email ?? "user-001",
+    title: body.title.trim(),
+    description: body.description ?? "",
+    budget: body.budget ?? 0,
+    status: "draft",
+    targetCategory: body.targetCategory ?? "",
+    targetSubscriberMin: body.targetSubscriberMin ?? 0,
+    targetSubscriberMax: body.targetSubscriberMax ?? 0,
+    channelIds: [],
+    startDate: body.startDate ?? "",
+    endDate: body.endDate ?? "",
     createdAt: now,
     updatedAt: now,
-    status: "draft",
-    ...body,
-    title: body.title.trim(),
-  } as Campaign;
+  };
 
   campaignStore.set(newCampaign.id, newCampaign);
 

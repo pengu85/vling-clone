@@ -2,7 +2,7 @@
 
 import { use, useState } from "react";
 import { notFound } from "next/navigation";
-import { BarChart2, TrendingUp, Users, DollarSign, Gift } from "lucide-react";
+import { BarChart2, TrendingUp, Users, DollarSign, Gift, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -35,12 +35,6 @@ const VALID_TYPES = new Set<RankType>([
   "superchat",
 ]);
 
-const PERIOD_OPTIONS = [
-  { value: "daily", label: "일간" },
-  { value: "weekly", label: "주간" },
-  { value: "monthly", label: "월간" },
-];
-
 const LIMIT = 20;
 
 interface PageProps {
@@ -58,10 +52,9 @@ export default function RankingTypePage({ params }: PageProps) {
 
   const rankType = rawType as RankType;
   const [category, setCategory] = useState("all");
-  const [period, setPeriod] = useState("daily");
   const [page, setPage] = useState(1);
 
-  const { data, isLoading } = useRanking({
+  const { data, isLoading, isError, refetch } = useRanking({
     type: rankType,
     category,
     page,
@@ -131,26 +124,25 @@ export default function RankingTypePage({ params }: PageProps) {
               ))}
             </SelectContent>
           </Select>
-
-          <Select value={period} onValueChange={(v) => setPeriod(v ?? "daily")}>
-            <SelectTrigger className="h-8 w-24 border-slate-700 bg-slate-800 text-slate-300 text-xs">
-              <SelectValue placeholder="기간" />
-            </SelectTrigger>
-            <SelectContent>
-              {PERIOD_OPTIONS.map((p) => (
-                <SelectItem key={p.value} value={p.value} className="text-xs">
-                  {p.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
 
+        {/* 에러 상태 */}
+        {isError && (
+          <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+            <AlertTriangle className="w-12 h-12 mb-4 text-yellow-500" />
+            <p className="text-lg mb-2">데이터를 불러올 수 없습니다</p>
+            <p className="text-sm mb-4">잠시 후 다시 시도해주세요</p>
+            <button onClick={() => refetch()} className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-500 transition-colors">
+              다시 시도
+            </button>
+          </div>
+        )}
+
         {/* 테이블 */}
-        <RankingTable data={items} isLoading={isLoading} />
+        {!isError && <RankingTable data={items} isLoading={isLoading} />}
 
         {/* 페이지네이션 */}
-        {!isLoading && totalPages > 1 && (
+        {!isLoading && !isError && totalPages > 1 && (
           <Pagination
             currentPage={page}
             totalPages={totalPages}

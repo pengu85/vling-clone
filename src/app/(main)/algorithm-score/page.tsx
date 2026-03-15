@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import Image from "next/image";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -195,7 +195,7 @@ export default function AlgorithmScorePage() {
     }
   }, []);
 
-  const { data, isLoading, isError } = useAlgorithmSearch({
+  const { data, isLoading, isError, refetch } = useAlgorithmSearch({
     q: q || undefined,
     minScore: parseInt(minScore) || undefined,
     page,
@@ -250,8 +250,20 @@ export default function AlgorithmScorePage() {
         )}
       </div>
 
+      {/* 에러 상태 */}
+      {isError && (
+        <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+          <AlertTriangle className="w-12 h-12 mb-4 text-yellow-500" />
+          <p className="text-lg mb-2">데이터를 불러올 수 없습니다</p>
+          <p className="text-sm mb-4">잠시 후 다시 시도해주세요</p>
+          <button onClick={() => refetch()} className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-500 transition-colors">
+            다시 시도
+          </button>
+        </div>
+      )}
+
       {/* 테이블 헤더 */}
-      <Card className="bg-slate-900 border-slate-800 overflow-hidden" role="region" aria-label="알고리즘 스코어 결과">
+      {!isError && <Card className="bg-slate-900 border-slate-800 overflow-hidden" role="region" aria-label="알고리즘 스코어 결과">
         <div className="overflow-x-auto">
           {/* 헤더 행 */}
           <div className="grid grid-cols-[40px_minmax(180px,1fr)_80px_100px_110px_130px_minmax(120px,1fr)] gap-3 px-4 py-2.5 border-b border-slate-800 bg-slate-800/50 min-w-[900px]">
@@ -281,10 +293,6 @@ export default function AlgorithmScorePage() {
           {/* 콘텐츠 */}
           {isLoading ? (
             Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)
-          ) : isError ? (
-            <div className="py-16 text-center text-slate-500 text-sm">
-              데이터를 불러오지 못했습니다. 잠시 후 다시 시도하세요.
-            </div>
           ) : channels.length === 0 ? (
             <div className="py-16 text-center text-slate-500 text-sm">
               조건에 맞는 채널이 없습니다
@@ -299,10 +307,10 @@ export default function AlgorithmScorePage() {
             ))
           )}
         </div>
-      </Card>
+      </Card>}
 
       {/* 더보기 */}
-      {hasMore && (
+      {!isError && hasMore && (
         <div className="flex justify-center">
           <Button
             variant="outline"

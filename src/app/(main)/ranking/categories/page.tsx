@@ -16,22 +16,6 @@ import {
 } from "recharts";
 import { formatCurrency } from "@/lib/formatters";
 
-// Estimated CPM by category (KRW)
-const CATEGORY_DATA = [
-  { name: "금융", cpm: 8500, growth: 12.3, channels: 1200, color: "#6366f1" },
-  { name: "교육", cpm: 6200, growth: 8.7, channels: 3400, color: "#8b5cf6" },
-  { name: "테크", cpm: 5800, growth: 15.2, channels: 2800, color: "#06b6d4" },
-  { name: "뷰티", cpm: 5200, growth: 6.4, channels: 4500, color: "#ec4899" },
-  { name: "게임", cpm: 4100, growth: 9.1, channels: 8200, color: "#10b981" },
-  { name: "음식", cpm: 3800, growth: 7.8, channels: 5600, color: "#f59e0b" },
-  { name: "여행", cpm: 3500, growth: 11.5, channels: 2100, color: "#14b8a6" },
-  { name: "예능", cpm: 3200, growth: 5.3, channels: 6800, color: "#f43f5e" },
-  { name: "스포츠", cpm: 2900, growth: 4.2, channels: 3200, color: "#3b82f6" },
-  { name: "음악", cpm: 2600, growth: 3.8, channels: 7500, color: "#a855f7" },
-  { name: "뉴스", cpm: 2400, growth: 2.1, channels: 1800, color: "#64748b" },
-  { name: "키즈", cpm: 2200, growth: -1.5, channels: 4200, color: "#fb923c" },
-];
-
 interface CategoryItem {
   name: string;
   cpm: number;
@@ -52,20 +36,17 @@ type SortKey = "cpm" | "growth" | "channels";
 export default function CategoryTrendsPage() {
   const [sortBy, setSortBy] = useState<SortKey>("cpm");
 
-  const { data: categories, isError, refetch } = useQuery({
+  const { data: categories, isLoading, isError, refetch } = useQuery({
     queryKey: ["category-trends"],
     queryFn: fetchCategoryTrends,
     staleTime: 60 * 60 * 1000, // 1 hour
-    placeholderData: CATEGORY_DATA,
   });
 
-  const categoryData = categories ?? CATEGORY_DATA;
+  const sorted = categories ? [...categories].sort((a, b) => b[sortBy] - a[sortBy]) : [];
 
-  const sorted = [...categoryData].sort((a, b) => b[sortBy] - a[sortBy]);
-
-  const avgCpm = Math.round(categoryData.reduce((s, c) => s + c.cpm, 0) / categoryData.length);
-  const avgGrowth = (categoryData.reduce((s, c) => s + c.growth, 0) / categoryData.length).toFixed(1);
-  const totalChannels = categoryData.reduce((s, c) => s + c.channels, 0);
+  const avgCpm = categories ? Math.round(categories.reduce((s, c) => s + c.cpm, 0) / categories.length) : 0;
+  const avgGrowth = categories ? (categories.reduce((s, c) => s + c.growth, 0) / categories.length).toFixed(1) : "0";
+  const totalChannels = categories ? categories.reduce((s, c) => s + c.channels, 0) : 0;
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
@@ -78,6 +59,19 @@ export default function CategoryTrendsPage() {
           </div>
           <p className="text-sm text-slate-400">카테고리별 CPM, 성장률, 채널 규모를 한눈에 비교하세요</p>
         </div>
+
+        {/* Loading skeleton */}
+        {isLoading && (
+          <div className="space-y-4 animate-pulse">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="h-20 rounded-xl bg-slate-800" />
+              ))}
+            </div>
+            <div className="h-72 rounded-xl bg-slate-800" />
+            <div className="h-96 rounded-xl bg-slate-800" />
+          </div>
+        )}
 
         {/* Error state */}
         {isError && (
@@ -92,6 +86,7 @@ export default function CategoryTrendsPage() {
         )}
 
         {/* 요약 카드 */}
+        {!isLoading && !isError && categories && (<>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           <Card className="bg-slate-900 border-slate-800">
             <CardContent className="pt-4 pb-4">
@@ -222,6 +217,7 @@ export default function CategoryTrendsPage() {
             </div>
           </CardContent>
         </Card>
+        </>)}
       </div>
     </div>
   );

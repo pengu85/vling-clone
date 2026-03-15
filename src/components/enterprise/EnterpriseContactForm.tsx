@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { Send, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -22,6 +23,9 @@ export function EnterpriseContactForm() {
         <p className="text-slate-400">
           영업일 기준 1일 이내에 담당자가 이메일로 연락드리겠습니다.
         </p>
+        <p className="text-sm text-yellow-400/80">
+          현재 데모 버전입니다. 실제 문의는 이메일(support@vling.com)로 보내주세요.
+        </p>
       </div>
     )
   }
@@ -31,6 +35,9 @@ export function EnterpriseContactForm() {
       onSubmit={handleSubmit}
       className="rounded-2xl border border-slate-700 bg-slate-800/50 p-8 space-y-5"
     >
+      <p className="text-sm text-yellow-400/80 text-center">
+        현재 데모 버전입니다. 실제 문의는 이메일(support@vling.com)로 보내주세요.
+      </p>
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         {/* 이름 */}
         <div className="space-y-1.5">
@@ -102,9 +109,9 @@ export function EnterpriseContactForm() {
 
       <p className="text-center text-xs text-slate-500">
         제출하면 블링의{" "}
-        <a href="#" className="underline hover:text-slate-300 transition-colors">
+        <Link href="/privacy" className="underline hover:text-slate-300 transition-colors">
           개인정보처리방침
-        </a>
+        </Link>
         에 동의하는 것으로 간주됩니다.
       </p>
     </form>

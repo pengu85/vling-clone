@@ -2,19 +2,10 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Star, TrendingUp, TrendingDown, ExternalLink } from "lucide-react";
+import { Star, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { useFavoriteStore } from "@/stores/favoriteStore";
-import { formatNumber, formatGrowthRate } from "@/lib/formatters";
-
-// Mock subscriber change data for favorited channels
-function getMockSubscriberChange(channelId: string) {
-  const seed = channelId.charCodeAt(0) + channelId.charCodeAt(channelId.length - 1);
-  const change = ((seed * 7 + 13) % 2000) - 400;
-  const viewChange = ((seed * 11 + 7) % 50000) - 5000;
-  return { subscriberChange: change, viewChange };
-}
+import { formatNumber } from "@/lib/formatters";
 
 export function FavoritesSummary() {
   const favorites = useFavoriteStore((s) => s.favorites);
@@ -44,16 +35,6 @@ export function FavoritesSummary() {
     );
   }
 
-  // Show significant changes first
-  const channelsWithChanges = favorites.map((fav) => ({
-    ...fav,
-    ...getMockSubscriberChange(fav.channel.id),
-  }));
-
-  const significantChanges = channelsWithChanges
-    .filter((c) => Math.abs(c.subscriberChange) > 500)
-    .sort((a, b) => Math.abs(b.subscriberChange) - Math.abs(a.subscriberChange));
-
   return (
     <Card className="bg-slate-800 border-slate-700">
       <CardHeader className="flex-row items-center justify-between">
@@ -70,50 +51,9 @@ export function FavoritesSummary() {
         </Link>
       </CardHeader>
       <CardContent>
-        {/* Significant changes alert */}
-        {significantChanges.length > 0 && (
-          <div className="mb-4 rounded-lg bg-slate-900/50 border border-slate-700 p-3">
-            <p className="text-xs font-medium text-amber-400 mb-2">
-              주요 구독자 변동
-            </p>
-            <div className="space-y-2">
-              {significantChanges.slice(0, 3).map((item) => (
-                <div key={item.channel.id} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Image
-                      src={item.channel.thumbnailUrl}
-                      alt={item.channel.title}
-                      width={24}
-                      height={24}
-                      className="rounded-full shrink-0"
-                    />
-                    <span className="text-sm text-slate-300 truncate">{item.channel.title}</span>
-                  </div>
-                  <Badge
-                    variant="secondary"
-                    className={
-                      item.subscriberChange > 0
-                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                        : "bg-red-500/10 text-red-400 border-red-500/20"
-                    }
-                  >
-                    {item.subscriberChange > 0 ? (
-                      <TrendingUp className="h-3 w-3 mr-1" />
-                    ) : (
-                      <TrendingDown className="h-3 w-3 mr-1" />
-                    )}
-                    {item.subscriberChange > 0 ? "+" : ""}
-                    {formatNumber(item.subscriberChange)}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Channel list */}
         <div className="space-y-2">
-          {channelsWithChanges.slice(0, 5).map((item) => (
+          {favorites.slice(0, 5).map((item) => (
             <Link
               key={item.channel.id}
               href={`/channel/${item.channel.id}`}
@@ -133,17 +73,6 @@ export function FavoritesSummary() {
                 <p className="text-xs text-slate-500">
                   구독자 {formatNumber(item.channel.subscriberCount)}
                 </p>
-              </div>
-              <div className="text-right shrink-0">
-                <p
-                  className={`text-xs font-medium ${
-                    item.subscriberChange >= 0 ? "text-emerald-400" : "text-red-400"
-                  }`}
-                >
-                  {item.subscriberChange >= 0 ? "+" : ""}
-                  {formatNumber(item.subscriberChange)}
-                </p>
-                <p className="text-[10px] text-slate-600">7일 변동</p>
               </div>
             </Link>
           ))}

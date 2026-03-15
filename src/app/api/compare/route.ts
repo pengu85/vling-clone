@@ -5,6 +5,15 @@ import { estimateMonthlyRevenue, estimateAdPrice } from "@/domain/revenueEstimat
 import { calculateGrowthRate } from "@/domain/growthRate";
 import type { Channel } from "@/types";
 
+const DEMO_BY_CATEGORY: Record<string, { maleRatio: number }> = {
+  gaming: { maleRatio: 72 },
+  beauty: { maleRatio: 25 },
+  music: { maleRatio: 52 },
+  sports: { maleRatio: 68 },
+  education: { maleRatio: 58 },
+  entertainment: { maleRatio: 55 },
+};
+
 export async function POST(request: NextRequest) {
   const { channelIds } = await request.json() as { channelIds: string[] };
 
@@ -70,7 +79,7 @@ export async function POST(request: NextRequest) {
         engagementRate,
         estimatedRevenue,
         estimatedAdPrice: estimateAdPrice(subscriberCount, engagementRate),
-        audienceMaleRatio: 55,
+        audienceMaleRatio: (DEMO_BY_CATEGORY[category] ?? { maleRatio: 55 }).maleRatio,
         audienceAgeDistribution: { "13-17": 8, "18-24": 28, "25-34": 35, "35-44": 18, "45-54": 8, "55+": 3 },
         audienceTopCountries: [
           { country: ch.snippet.country || "KR", ratio: 72 },
