@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { youtubeClient } from "@/lib/youtube";
+import { youtubeClient, extractCategory } from "@/lib/youtube";
 import { calculateAlgoScore } from "@/domain/algoScore";
 import { estimateMonthlyRevenue, estimateAdPrice } from "@/domain/revenueEstimate";
-import { deterministicGrowthRate } from "@/lib/utils";
+import { calculateGrowthRate } from "@/domain/growthRate";
 import type { Channel } from "@/types";
 
 export async function POST(request: NextRequest) {
@@ -43,10 +43,12 @@ export async function POST(request: NextRequest) {
         ? parseFloat(((dailyAvgViews / subscriberCount) * 100).toFixed(1))
         : 0;
 
+      const category = extractCategory(ch.topicDetails?.topicCategories);
+
       const estimatedRevenue = estimateMonthlyRevenue({
         dailyViews: dailyAvgViews,
         country: ch.snippet.country || "KR",
-        category: "entertainment",
+        category,
       });
 
       return {
@@ -59,10 +61,10 @@ export async function POST(request: NextRequest) {
         subscriberCount,
         viewCount,
         videoCount,
-        category: "entertainment",
+        category,
         country: ch.snippet.country || "KR",
         language: ch.snippet.defaultLanguage || "ko",
-        growthRate30d: deterministicGrowthRate(ch.id),
+        growthRate30d: calculateGrowthRate(viewCount, videoCount, subscriberCount),
         dailyAvgViews,
         algoScore,
         engagementRate,

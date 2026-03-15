@@ -3,6 +3,7 @@ import { youtubeClient, extractCategory } from "@/lib/youtube";
 import { cache } from "@/lib/cache";
 import { calculateChannelAlgoScore } from "@/domain/algoScore";
 import { estimateMonthlyRevenue } from "@/domain/revenueEstimate";
+import { calculateGrowthRate } from "@/domain/growthRate";
 import type { ChannelSearchResult } from "@/types";
 import type { ChannelRanking } from "@/types/ranking";
 
@@ -130,13 +131,8 @@ async function fetchRealRankings(category: string): Promise<RankingEntry[]> {
 
     const estimatedRevenue = estimateMonthlyRevenue({ dailyViews: dailyAvgViews, country, category });
 
-    // Growth estimate: view efficiency (avg views per video / subscriber count)
-    // High ratio = algorithm pushing content beyond subscriber base = growing
-    // Normal ~0.15-0.3, viral >0.5, declining <0.1
-    const viewEfficiency = subscriberCount > 0 ? avgViewsPerVideo / subscriberCount : 0;
-    const growthRate30d = parseFloat(
-      Math.max(-8, Math.min(15, (viewEfficiency - 0.2) * 25)).toFixed(1)
-    );
+    // Growth estimate: shared calculation based on total views, video count, and subscribers
+    const growthRate30d = calculateGrowthRate(totalViewCount, videoCount, subscriberCount);
 
     return {
       id: item.id,

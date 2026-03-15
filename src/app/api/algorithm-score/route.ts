@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { youtubeClient } from "@/lib/youtube";
+import { youtubeClient, extractCategory } from "@/lib/youtube";
 import { calculateAlgoScore } from "@/domain/algoScore";
 import { estimateMonthlyRevenue } from "@/domain/revenueEstimate";
-import { deterministicGrowthRate } from "@/lib/utils";
+import { calculateGrowthRate } from "@/domain/growthRate";
 import type { ChannelSearchResult } from "@/types";
 
 export async function GET(request: NextRequest) {
@@ -55,10 +55,12 @@ export async function GET(request: NextRequest) {
         videoCount,
       });
 
+      const category = extractCategory(ch.topicDetails?.topicCategories);
+
       const estimatedRevenue = estimateMonthlyRevenue({
         dailyViews: dailyAvgViews,
         country: ch.snippet.country || "KR",
-        category: "entertainment",
+        category,
       });
 
       return {
@@ -68,10 +70,10 @@ export async function GET(request: NextRequest) {
         thumbnailUrl: ch.snippet.thumbnails.high.url,
         subscriberCount,
         dailyAvgViews,
-        growthRate30d: deterministicGrowthRate(ch.id),
+        growthRate30d: calculateGrowthRate(viewCount, videoCount, subscriberCount),
         algoScore,
         estimatedRevenue,
-        category: "entertainment",
+        category,
         country: ch.snippet.country || "KR",
       };
     });

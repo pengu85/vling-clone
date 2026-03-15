@@ -84,7 +84,10 @@ export function AudienceChart({
       {/* 성별 비율 */}
       <Card className="bg-slate-900 border-slate-800">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-slate-300">성별 비율</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-medium text-slate-300">성별 비율</CardTitle>
+            <span className="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded">추정치</span>
+          </div>
         </CardHeader>
         <CardContent className="pt-0">
           <ResponsiveContainer width="100%" height={180}>
@@ -127,7 +130,10 @@ export function AudienceChart({
       {/* 연령 분포 */}
       <Card className="bg-slate-900 border-slate-800">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-slate-300">연령 분포</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-medium text-slate-300">연령 분포</CardTitle>
+            <span className="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded">추정치</span>
+          </div>
         </CardHeader>
         <CardContent className="pt-0">
           <ResponsiveContainer width="100%" height={180}>
@@ -158,7 +164,10 @@ export function AudienceChart({
       {/* 국가별 시청자 */}
       <Card className="bg-slate-900 border-slate-800">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-slate-300">국가별 시청자</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-medium text-slate-300">국가별 시청자</CardTitle>
+            <span className="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded">추정치</span>
+          </div>
         </CardHeader>
         <CardContent className="pt-0">
           <ResponsiveContainer width="100%" height={180}>

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
 import Link from "next/link";
-import { Film, Smartphone, ExternalLink } from "lucide-react";
+import { Film, Smartphone, ExternalLink, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -80,7 +80,7 @@ export default function VideoRankingPage() {
   const [period, setPeriod] = useState("daily");
   const [page, setPage] = useState(1);
 
-  const { data, isLoading } = useQuery<VideoRankingResponse>({
+  const { data, isLoading, isError, refetch } = useQuery<VideoRankingResponse>({
     queryKey: ["video-ranking", videoType, category, period, page],
     queryFn: async () => {
       const params = new URLSearchParams({
@@ -331,15 +331,27 @@ export default function VideoRankingPage() {
           </table>
         </div>
 
+        {/* Error state */}
+        {isError && (
+          <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+            <AlertTriangle className="w-12 h-12 mb-4 text-yellow-500" />
+            <p className="text-lg mb-2">데이터를 불러올 수 없습니다</p>
+            <p className="text-sm mb-4">잠시 후 다시 시도해주세요</p>
+            <button onClick={() => refetch()} className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-500 transition-colors">
+              다시 시도
+            </button>
+          </div>
+        )}
+
         {/* Empty state */}
-        {!isLoading && items.length === 0 && (
+        {!isLoading && !isError && items.length === 0 && (
           <div className="mt-8 text-center text-slate-500">
             해당 조건의 영상이 없습니다.
           </div>
         )}
 
         {/* Pagination */}
-        {!isLoading && totalPages > 1 && (
+        {!isLoading && !isError && totalPages > 1 && (
           <Pagination
             currentPage={page}
             totalPages={totalPages}

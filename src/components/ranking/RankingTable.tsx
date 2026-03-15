@@ -181,7 +181,10 @@ export function RankingTable({ data, isLoading }: RankingTableProps) {
                 일 조회수
               </TableHead>
               <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">
-                예상 수익
+                <span className="flex items-center justify-end gap-1.5">
+                  예상 수익
+                  <span className="text-[10px] font-normal text-slate-600 bg-slate-800 px-1.5 py-0.5 rounded normal-case tracking-normal">추정</span>
+                </span>
               </TableHead>
             </TableRow>
           </TableHeader>

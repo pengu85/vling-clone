@@ -8,6 +8,7 @@ import { CompareTable } from "@/components/compare/CompareTable";
 import { CompareChart } from "@/components/compare/CompareChart";
 import { ChannelSearchModal } from "@/components/compare/ChannelSearchModal";
 import { useCompareStore } from "@/stores/compareStore";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function ComparePage() {
   const [modalOpen, setModalOpen] = useState(false);
@@ -17,6 +18,7 @@ export default function ComparePage() {
 
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6">
+      <Breadcrumb items={[{ label: "채널 비교" }]} />
       {/* Header */}
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>

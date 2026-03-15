@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { youtubeClient, extractCategory } from "@/lib/youtube";
 import { calculateChannelAlgoScore } from "@/domain/algoScore";
 import { estimateMonthlyRevenue, estimateAdPrice } from "@/domain/revenueEstimate";
+import { calculateGrowthRate } from "@/domain/growthRate";
 import type { Channel } from "@/types";
 
 export async function GET(
@@ -87,11 +88,8 @@ export async function GET(
 
     const category = extractCategory(ch.topicDetails?.topicCategories);
 
-    // Growth rate: view efficiency (avg views per video / subscribers)
-    const viewEfficiency = subscriberCount > 0 ? avgViewsPerVideo / subscriberCount : 0;
-    const growthRate30d = parseFloat(
-      Math.max(-8, Math.min(15, (viewEfficiency - 0.2) * 25)).toFixed(1)
-    );
+    // Growth rate: uses shared calculation based on total views, video count, and subscribers
+    const growthRate30d = calculateGrowthRate(viewCount, videoCount, subscriberCount);
 
     const estimatedRevenue = estimateMonthlyRevenue({
       dailyViews: dailyAvgViews,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { TrendingUp, Flame, Zap, ArrowUpRight } from "lucide-react";
+import { TrendingUp, Flame, Zap, ArrowUpRight, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -21,7 +21,7 @@ export default function GrowthRankingPage() {
   const [category, setCategory] = useState("all");
   const [page, setPage] = useState(1);
 
-  const { data, isLoading } = useRanking({
+  const { data, isLoading, isError, refetch } = useRanking({
     type: "growth",
     category,
     page,
@@ -107,11 +107,23 @@ export default function GrowthRankingPage() {
           </Badge>
         </div>
 
+        {/* Error state */}
+        {isError && (
+          <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+            <AlertTriangle className="w-12 h-12 mb-4 text-yellow-500" />
+            <p className="text-lg mb-2">데이터를 불러올 수 없습니다</p>
+            <p className="text-sm mb-4">잠시 후 다시 시도해주세요</p>
+            <button onClick={() => refetch()} className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-500 transition-colors">
+              다시 시도
+            </button>
+          </div>
+        )}
+
         {/* 테이블 */}
-        <RankingTable data={items} isLoading={isLoading} />
+        {!isError && <RankingTable data={items} isLoading={isLoading} />}
 
         {/* 페이지네이션 */}
-        {!isLoading && totalPages > 1 && (
+        {!isLoading && !isError && totalPages > 1 && (
           <div className="mt-6 flex justify-center gap-2">
             <button
               disabled={page <= 1}

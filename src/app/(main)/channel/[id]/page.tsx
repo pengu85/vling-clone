@@ -14,6 +14,7 @@ import { formatNumber, formatGrowthRate, formatCurrency } from "@/lib/formatters
 import { TrendingUp, Zap, DollarSign, Activity } from "lucide-react";
 import { AIInsightPanel } from "@/components/channel/AIInsightPanel";
 import { useRecentStore } from "@/stores/recentStore";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -119,6 +120,7 @@ export default function ChannelDetailPage({ params }: Props) {
       <ChannelProfile channel={channel} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <Breadcrumb items={[{ label: "채널 검색", href: "/search" }, { label: channel.title }]} />
         <Tabs defaultValue="overview">
           <TabsList className="mb-6 bg-slate-900 border border-slate-800 rounded-xl p-1 h-auto w-auto gap-0.5">
             <TabsTrigger value="overview" className="text-sm px-4 py-2 rounded-lg">
@@ -313,6 +315,10 @@ export default function ChannelDetailPage({ params }: Props) {
           {/* 시청자분석 탭 */}
           <TabsContent value="audience">
             <div className="space-y-6">
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-slate-500">시청자 데이터는 AI 추정치로 실제 YouTube Analytics와 다를 수 있습니다.</p>
+                <span className="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded shrink-0">추정치</span>
+              </div>
               <AudienceChart
                 audienceMaleRatio={channel.audienceMaleRatio}
                 audienceAgeDistribution={channel.audienceAgeDistribution}
@@ -326,9 +332,12 @@ export default function ChannelDetailPage({ params }: Props) {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <Card className="bg-slate-900 border-slate-800">
                 <CardHeader>
-                  <CardTitle className="text-base font-semibold text-slate-200">
-                    광고 단가 정보
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base font-semibold text-slate-200">
+                      광고 단가 정보
+                    </CardTitle>
+                    <span className="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded">추정치</span>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex justify-between items-center py-3 border-b border-slate-800">

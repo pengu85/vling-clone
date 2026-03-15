@@ -3,6 +3,7 @@ import { youtubeClient, extractCategory } from "@/lib/youtube";
 import type { SearchChannelsOptions } from "@/lib/youtube";
 import { calculateChannelAlgoScore } from "@/domain/algoScore";
 import { estimateMonthlyRevenue } from "@/domain/revenueEstimate";
+import { calculateGrowthRate } from "@/domain/growthRate";
 import type { ChannelSearchResult } from "@/types";
 
 // Map UI sort values to YouTube API order parameter values.
@@ -84,76 +85,24 @@ export async function GET(request: NextRequest) {
 
     const channelDetails = await youtubeClient.getChannel(channelIds.join(","));
 
-    // 3. Batch-fetch recent videos for real engagement metrics
-    const videoStatsMap = new Map<string, {
-      avgViewsPerVideo: number;
-      avgLikeRate: number;
-      avgCommentRate: number;
-      recentVideoCount: number;
-      totalRecentViews: number;
-    }>();
-
-    const channelVideoPromises = channelDetails.items.map(async (ch) => {
-      try {
-        const searchRes = await youtubeClient.getChannelVideos(ch.id, 5);
-        if (!searchRes.items?.length) return;
-
-        const videoIds = searchRes.items
-          .map((item) => item.id.videoId)
-          .filter(Boolean) as string[];
-        if (videoIds.length === 0) return;
-
-        const videosRes = await youtubeClient.getVideoDetails(videoIds);
-        if (!videosRes.items?.length) return;
-
-        let totalViews = 0, totalLikes = 0, totalComments = 0;
-        let recentCount = 0;
-        const thirtyDaysAgo = Date.now() - 30 * 86400000;
-
-        for (const v of videosRes.items) {
-          const views = parseInt(v.statistics.viewCount) || 0;
-          const likes = parseInt(v.statistics.likeCount) || 0;
-          const comments = parseInt(v.statistics.commentCount) || 0;
-          totalViews += views;
-          totalLikes += likes;
-          totalComments += comments;
-          if (new Date(v.snippet.publishedAt).getTime() >= thirtyDaysAgo) {
-            recentCount++;
-          }
-        }
-
-        const count = videosRes.items.length;
-        videoStatsMap.set(ch.id, {
-          avgViewsPerVideo: totalViews / count,
-          avgLikeRate: totalViews > 0 ? totalLikes / totalViews : 0,
-          avgCommentRate: totalViews > 0 ? totalComments / totalViews : 0,
-          recentVideoCount: recentCount,
-          totalRecentViews: totalViews,
-        });
-      } catch {
-        // Individual channel video fetch failure is OK
-      }
-    });
-
-    await Promise.allSettled(channelVideoPromises);
-
-    // 4. Transform to ChannelSearchResult format
+    // 3. Transform to ChannelSearchResult format
+    // Note: Per-channel video fetching is intentionally omitted here to avoid
+    // burning 2 API calls per channel (100+ calls for a 50-result search).
+    // Engagement stats are estimated from channel-level totals.
+    // The channel detail page fetches real video data when the user navigates there.
     let channels: ChannelSearchResult[] = channelDetails.items.map((ch) => {
       const subscriberCount = parseInt(ch.statistics.subscriberCount) || 0;
       const viewCount = parseInt(ch.statistics.viewCount) || 0;
       const videoCount = parseInt(ch.statistics.videoCount) || 0;
 
-      const videoStats = videoStatsMap.get(ch.id);
       const overallAvgViews = videoCount > 0 ? viewCount / videoCount : 0;
 
-      const avgViewsPerVideo = videoStats?.avgViewsPerVideo ?? overallAvgViews;
-      const avgLikeRate = videoStats?.avgLikeRate ?? 0.03;
-      const avgCommentRate = videoStats?.avgCommentRate ?? 0.005;
-      const recentVideoCount = videoStats?.recentVideoCount ?? 0;
+      const avgViewsPerVideo = overallAvgViews;
+      const avgLikeRate = 0.03;
+      const avgCommentRate = 0.005;
+      const recentVideoCount = 0;
 
-      const dailyAvgViews = videoStats
-        ? Math.round(videoStats.totalRecentViews / Math.max(recentVideoCount, 1) / 30)
-        : Math.round(overallAvgViews / 30);
+      const dailyAvgViews = Math.round(overallAvgViews / 30);
 
       const algoScore = calculateChannelAlgoScore({
         avgViewsPerVideo,
@@ -172,12 +121,8 @@ export async function GET(request: NextRequest) {
         category: channelCategory,
       });
 
-      // Growth rate: view efficiency (avg views per video / subscribers)
-      // High ratio = algorithm pushing content = growing channel
-      const viewEfficiency = subscriberCount > 0 ? avgViewsPerVideo / subscriberCount : 0;
-      const growthRate30d = parseFloat(
-        Math.max(-8, Math.min(15, (viewEfficiency - 0.2) * 25)).toFixed(1)
-      );
+      // Growth rate: shared calculation based on total views, video count, and subscribers
+      const growthRate30d = calculateGrowthRate(viewCount, videoCount, subscriberCount);
 
       return {
         id: ch.id,
@@ -195,7 +140,7 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // 5. Client-side filtering for fields YouTube API doesn't filter natively
+    // 4. Client-side filtering for fields YouTube API doesn't filter natively
 
     // Subscriber range filter
     if (subscriberMin !== null) {

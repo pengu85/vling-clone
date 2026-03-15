@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
-import { Radio, ExternalLink } from "lucide-react";
+import { Radio, ExternalLink, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CATEGORIES } from "@/domain/categories";
@@ -50,7 +50,7 @@ function formatElapsed(startedAt: string): string {
 export default function LiveRankingPage() {
   const [category, setCategory] = useState("all");
 
-  const { data, isLoading } = useQuery<LiveResponse>({
+  const { data, isLoading, isError, refetch } = useQuery<LiveResponse>({
     queryKey: ["live-ranking", category],
     queryFn: async () => {
       const params = new URLSearchParams({ category });
@@ -236,8 +236,20 @@ export default function LiveRankingPage() {
           </table>
         </div>
 
+        {/* Error state */}
+        {isError && (
+          <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+            <AlertTriangle className="w-12 h-12 mb-4 text-yellow-500" />
+            <p className="text-lg mb-2">데이터를 불러올 수 없습니다</p>
+            <p className="text-sm mb-4">잠시 후 다시 시도해주세요</p>
+            <button onClick={() => refetch()} className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-500 transition-colors">
+              다시 시도
+            </button>
+          </div>
+        )}
+
         {/* Empty state */}
-        {!isLoading && items.length === 0 && (
+        {!isLoading && !isError && items.length === 0 && (
           <div className="mt-8 text-center text-slate-500">
             현재 라이브 중인 채널이 없습니다.
           </div>

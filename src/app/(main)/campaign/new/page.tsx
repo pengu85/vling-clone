@@ -3,27 +3,36 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { CampaignForm } from "@/components/campaign/CampaignForm";
-import { useCampaignStore } from "@/stores/campaignStore";
 import type { Campaign } from "@/types/campaign";
+import { useToast } from "@/stores/toastStore";
 
 export default function NewCampaignPage() {
   const router = useRouter();
-  const { addCampaign } = useCampaignStore();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  function handleSubmit(data: Omit<Campaign, "id" | "userId" | "createdAt" | "updatedAt">) {
+  async function handleSubmit(data: Omit<Campaign, "id" | "userId" | "createdAt" | "updatedAt">) {
     setIsLoading(true);
-    const now = new Date();
-    const newCampaign: Campaign = {
-      id: `camp-${Date.now()}`,
-      userId: "",
-      createdAt: now,
-      updatedAt: now,
-      ...data,
-    };
-    addCampaign(newCampaign);
-    setIsLoading(false);
-    router.push("/campaign/manage");
+    try {
+      const res = await fetch("/api/campaign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json.error ?? `서버 오류 (${res.status})`);
+      }
+
+      toast("캠페인이 생성되었습니다", "success");
+      router.push("/campaign/manage");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "캠페인 생성에 실패했습니다";
+      toast(message, "error");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (

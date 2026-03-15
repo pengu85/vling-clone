@@ -20,10 +20,10 @@ import { AutocompleteDropdown } from "@/components/search/AutocompleteDropdown"
 import type { AutocompleteChannel } from "@/app/api/youtube/autocomplete/route"
 
 const navLinks = [
-  { label: "기능", href: "/features" },
-  { label: "블로그", href: "/blog" },
-  { label: "채널", href: "/channels" },
-  { label: "요금안내", href: "/pricing" },
+  { label: "채널 검색", href: "/search" },
+  { label: "랭킹", href: "/ranking" },
+  { label: "트렌딩", href: "/trending" },
+  { label: "요금제", href: "/pricing" },
 ]
 
 function UserMenu() {

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
-import { Flame, ExternalLink } from "lucide-react";
+import { Flame, ExternalLink, AlertTriangle } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatNumber, formatDate } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 interface TrendingVideoItem {
   videoId: string;
@@ -69,7 +70,7 @@ export default function TrendingPage() {
   const [category, setCategory] = useState("all");
   const [region, setRegion] = useState("KR");
 
-  const { data, isLoading } = useQuery<TrendingResponse>({
+  const { data, isLoading, isError, refetch } = useQuery<TrendingResponse>({
     queryKey: ["trending", region, category],
     queryFn: async () => {
       const params = new URLSearchParams({ region, category });
@@ -85,6 +86,7 @@ export default function TrendingPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <Breadcrumb items={[{ label: "트렌딩" }]} />
         {/* Header */}
         <div className="mb-6 flex items-center gap-2">
           <Flame className="size-6 text-orange-400" />
@@ -135,7 +137,16 @@ export default function TrendingPage() {
         </div>
 
         {/* Video Grid */}
-        {isLoading ? (
+        {isError ? (
+          <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+            <AlertTriangle className="w-12 h-12 mb-4 text-yellow-500" />
+            <p className="text-lg mb-2">데이터를 불러올 수 없습니다</p>
+            <p className="text-sm mb-4">잠시 후 다시 시도해주세요</p>
+            <button onClick={() => refetch()} className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-500 transition-colors">
+              다시 시도
+            </button>
+          </div>
+        ) : isLoading ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {Array.from({ length: 12 }).map((_, i) => (
               <div

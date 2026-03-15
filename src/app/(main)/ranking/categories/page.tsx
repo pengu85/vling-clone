@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { BarChart3, TrendingUp, DollarSign, Users } from "lucide-react";
+import { BarChart3, TrendingUp, DollarSign, Users, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   BarChart,
@@ -52,7 +52,7 @@ type SortKey = "cpm" | "growth" | "channels";
 export default function CategoryTrendsPage() {
   const [sortBy, setSortBy] = useState<SortKey>("cpm");
 
-  const { data: categories } = useQuery({
+  const { data: categories, isError, refetch } = useQuery({
     queryKey: ["category-trends"],
     queryFn: fetchCategoryTrends,
     staleTime: 60 * 60 * 1000, // 1 hour
@@ -78,6 +78,18 @@ export default function CategoryTrendsPage() {
           </div>
           <p className="text-sm text-slate-400">카테고리별 CPM, 성장률, 채널 규모를 한눈에 비교하세요</p>
         </div>
+
+        {/* Error state */}
+        {isError && (
+          <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+            <AlertTriangle className="w-12 h-12 mb-4 text-yellow-500" />
+            <p className="text-lg mb-2">데이터를 불러올 수 없습니다</p>
+            <p className="text-sm mb-4">잠시 후 다시 시도해주세요</p>
+            <button onClick={() => refetch()} className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-500 transition-colors">
+              다시 시도
+            </button>
+          </div>
+        )}
 
         {/* 요약 카드 */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
@@ -113,7 +125,10 @@ export default function CategoryTrendsPage() {
         {/* CPM 차트 */}
         <Card className="bg-slate-900 border-slate-800 mb-8">
           <CardHeader>
-            <CardTitle className="text-base text-slate-200">카테고리별 CPM 비교</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base text-slate-200">카테고리별 CPM 비교</CardTitle>
+              <span className="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded">추정치</span>
+            </div>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>

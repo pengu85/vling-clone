@@ -12,6 +12,7 @@ import { Download, Loader2, SearchX } from "lucide-react";
 import { channelsToCSV, downloadCSV } from "@/lib/csv";
 import { SearchHistory } from "@/components/search/SearchHistory";
 import { useSearchHistoryStore } from "@/stores/searchHistoryStore";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 const LIMIT = 20;
 
@@ -111,6 +112,7 @@ export default function SearchPage() {
 
   return (
     <div className="space-y-4">
+      <Breadcrumb items={[{ label: "채널 검색" }]} />
       {/* 검색바 */}
       <div className="w-full max-w-2xl">
         <SearchBar onSearch={handleSearch} defaultValue={filters.q ?? ""} />
