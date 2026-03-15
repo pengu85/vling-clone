@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Sparkles, Info } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { AIFinderForm } from "@/components/tools/AIFinderForm";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export const metadata: Metadata = {
   title: "AI 파인더",
@@ -11,6 +12,7 @@ export const metadata: Metadata = {
 export default function AIFinderPage() {
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: "도구", href: "/tools/ai-finder" }, { label: "AI 파인더" }]} />
       {/* 헤더 */}
       <div>
         <div className="flex items-center gap-2 mb-1">

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Loader2, Sparkles, Target, Users, TrendingUp } from "lucide-react";
+import { Loader2, Sparkles, Target, Users, TrendingUp, AlertTriangle } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -293,6 +293,16 @@ export function AIFinderForm() {
       {/* 결과 섹션 */}
       {result && (
         <div className="space-y-4">
+          {/* Mock data banner */}
+          {result.isMock && (
+            <div className="flex items-center gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+              <AlertTriangle className="h-4 w-4 shrink-0 text-amber-400" />
+              <p className="text-sm text-amber-300">
+                AI API 키가 설정되지 않아 샘플 데이터입니다
+              </p>
+            </div>
+          )}
+
           {/* 요약 */}
           <Card className="bg-slate-900 border-slate-800">
             <CardContent className="pt-4 pb-4">

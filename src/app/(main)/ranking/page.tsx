@@ -27,24 +27,16 @@ const RANK_TABS: { value: RankType; label: string; icon: React.ElementType }[] =
   { value: "superchat", label: "슈퍼챗", icon: Gift },
 ];
 
-const PERIOD_OPTIONS = [
-  { value: "daily", label: "일간" },
-  { value: "weekly", label: "주간" },
-  { value: "monthly", label: "월간" },
-];
-
 const LIMIT = 20;
 
 export default function RankingPage() {
   const [rankType, setRankType] = useState<RankType>("subscriber");
   const [category, setCategory] = useState("all");
-  const [period, setPeriod] = useState("daily");
   const [page, setPage] = useState(1);
 
   const { data, isLoading } = useRanking({
     type: rankType,
     category,
-    period,
     page,
     limit: LIMIT,
   });
@@ -59,11 +51,6 @@ export default function RankingPage() {
 
   function handleCategoryChange(val: string | null) {
     setCategory(val ?? "all");
-    setPage(1);
-  }
-
-  function handlePeriodChange(val: string | null) {
-    setPeriod(val ?? "daily");
     setPage(1);
   }
 
@@ -118,19 +105,6 @@ export default function RankingPage() {
               {CATEGORIES.map((c) => (
                 <SelectItem key={c.value} value={c.value} className="text-xs">
                   {c.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={period} onValueChange={handlePeriodChange}>
-            <SelectTrigger className="h-8 w-24 border-slate-700 bg-slate-800 text-slate-300 text-xs">
-              <SelectValue placeholder="기간" />
-            </SelectTrigger>
-            <SelectContent>
-              {PERIOD_OPTIONS.map((p) => (
-                <SelectItem key={p.value} value={p.value} className="text-xs">
-                  {p.label}
                 </SelectItem>
               ))}
             </SelectContent>

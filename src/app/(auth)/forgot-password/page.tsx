@@ -2,19 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Mail, ArrowLeft, CheckCircle } from "lucide-react";
+import { Mail, ArrowLeft, AlertCircle } from "lucide-react";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    // Simulate async action
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setLoading(false);
     setSubmitted(true);
   };
 
@@ -61,25 +56,22 @@ export default function ForgotPasswordPage() {
 
                 <button
                   type="submit"
-                  disabled={loading || !email}
+                  disabled={!email}
                   className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg py-2.5 text-sm transition-colors"
                 >
-                  {loading ? "전송 중..." : "재설정 링크 보내기"}
+                  재설정 링크 보내기
                 </button>
               </form>
             </>
           ) : (
-            /* Success State */
+            /* Not Available State */
             <div className="text-center py-4">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-600/20 mb-4">
-                <CheckCircle className="w-6 h-6 text-green-400" />
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/20 mb-4">
+                <AlertCircle className="w-6 h-6 text-amber-400" />
               </div>
-              <h2 className="text-xl font-bold text-white mb-2">이메일 전송 완료</h2>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                비밀번호 재설정 링크가 이메일로 전송되었습니다
-              </p>
-              <p className="mt-1 text-xs text-slate-500">
-                받은 편지함을 확인해 주세요
+              <h2 className="text-xl font-bold text-white mb-2">기능 준비 중</h2>
+              <p className="text-sm text-amber-300/80 leading-relaxed">
+                비밀번호 재설정 기능은 현재 준비 중입니다. 관리자에게 문의해주세요.
               </p>
             </div>
           )}

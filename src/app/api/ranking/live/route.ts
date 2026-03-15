@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { youtubeClient } from "@/lib/youtube";
 import { cache } from "@/lib/cache";
 
@@ -12,16 +12,12 @@ interface LiveStreamItem {
   channelThumbnailUrl: string;
   concurrentViewers: number;
   startedAt: string;
-  category: string;
 }
 
 const CACHE_TTL = 300; // 5 minutes for live data
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = request.nextUrl;
-  const category = searchParams.get("category") || "all";
-
-  const cacheKey = `live-ranking:v1:${category}`;
+export async function GET() {
+  const cacheKey = `live-ranking:v1`;
   let items: LiveStreamItem[];
 
   const hasApiKey = !!process.env.YOUTUBE_API_KEY;
@@ -58,7 +54,6 @@ export async function GET(request: NextRequest) {
             channelThumbnailUrl: "",
             concurrentViewers,
             startedAt: v.liveStreamingDetails?.actualStartTime || v.snippet.publishedAt,
-            category: "entertainment",
           };
         });
 
@@ -73,13 +68,6 @@ export async function GET(request: NextRequest) {
     }
   } else {
     return NextResponse.json({ error: { code: "SERVICE_UNAVAILABLE", message: "YouTube API를 사용할 수 없습니다" } }, { status: 503 });
-  }
-
-  // Filter by category
-  if (category !== "all") {
-    items = items
-      .filter((item) => item.category === category)
-      .map((item, i) => ({ ...item, rank: i + 1 }));
   }
 
   return NextResponse.json({ data: items });

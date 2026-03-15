@@ -8,6 +8,7 @@ import {
   FileText,
   CheckCircle2,
   Hash,
+  AlertTriangle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -200,6 +201,16 @@ export function AIContentMaker() {
       {/* 결과 */}
       {result && (
         <div className="space-y-4">
+          {/* Mock data banner */}
+          {result.isMock && (
+            <div className="flex items-center gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+              <AlertTriangle className="h-4 w-4 shrink-0 text-amber-400" />
+              <p className="text-sm text-amber-300">
+                AI API 키가 설정되지 않아 샘플 데이터입니다
+              </p>
+            </div>
+          )}
+
           {/* A. 키워드 분석 */}
           <Card className="bg-slate-900 border-slate-800">
             <CardHeader>

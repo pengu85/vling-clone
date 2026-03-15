@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+export const metadata = { title: "개인정보처리방침" };
+
 export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-slate-950">

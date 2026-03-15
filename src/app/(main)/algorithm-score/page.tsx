@@ -252,33 +252,33 @@ export default function AlgorithmScorePage() {
 
       {/* 테이블 헤더 */}
       <Card className="bg-slate-900 border-slate-800 overflow-hidden" role="region" aria-label="알고리즘 스코어 결과">
-        {/* 헤더 행 */}
-        <div className="grid grid-cols-[40px_minmax(180px,1fr)_80px_100px_110px_130px_minmax(120px,1fr)] gap-3 px-4 py-2.5 border-b border-slate-800 bg-slate-800/50 min-w-[900px]">
-          <div className="text-center text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-            #
-          </div>
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-            채널
-          </div>
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-            알고리즘
-          </div>
-          <div className="text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-            구독자
-          </div>
-          <div className="text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-            일 조회수
-          </div>
-          <div className="text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-            예상 수익
-          </div>
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-            최신 영상
-          </div>
-        </div>
-
-        {/* 콘텐츠 */}
         <div className="overflow-x-auto">
+          {/* 헤더 행 */}
+          <div className="grid grid-cols-[40px_minmax(180px,1fr)_80px_100px_110px_130px_minmax(120px,1fr)] gap-3 px-4 py-2.5 border-b border-slate-800 bg-slate-800/50 min-w-[900px]">
+            <div className="text-center text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              #
+            </div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              채널
+            </div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              알고리즘
+            </div>
+            <div className="text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              구독자
+            </div>
+            <div className="text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              일 조회수
+            </div>
+            <div className="text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              예상 수익
+            </div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              최신 영상
+            </div>
+          </div>
+
+          {/* 콘텐츠 */}
           {isLoading ? (
             Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)
           ) : isError ? (

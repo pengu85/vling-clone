@@ -12,6 +12,7 @@ import {
   Lightbulb,
   Users,
   BarChart2,
+  Info,
 } from "lucide-react";
 import type { InsightResponse } from "@/lib/ai";
 
@@ -163,6 +164,16 @@ export function AIInsightPanel({ channelId }: Props) {
 
   return (
     <div className="space-y-4">
+      {/* Mock data banner */}
+      {insight.isMock && (
+        <div className="flex items-center gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+          <Info className="h-4 w-4 shrink-0 text-amber-400" />
+          <p className="text-sm text-amber-300">
+            AI API 키가 설정되지 않아 샘플 데이터입니다
+          </p>
+        </div>
+      )}
+
       {/* Channel Summary */}
       <Card className="bg-slate-900 border-slate-800">
         <CardHeader className="pb-2">

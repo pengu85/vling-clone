@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+export const metadata = { title: "이용약관" };
+
 export default function TermsPage() {
   return (
     <div className="min-h-screen bg-slate-950">

@@ -122,23 +122,25 @@ export default function ChannelDetailPage({ params }: Props) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Breadcrumb items={[{ label: "채널 검색", href: "/search" }, { label: channel.title }]} />
         <Tabs defaultValue="overview">
-          <TabsList className="mb-6 bg-slate-900 border border-slate-800 rounded-xl p-1 h-auto w-auto gap-0.5">
-            <TabsTrigger value="overview" className="text-sm px-4 py-2 rounded-lg">
-              개요
-            </TabsTrigger>
-            <TabsTrigger value="videos" className="text-sm px-4 py-2 rounded-lg">
-              영상
-            </TabsTrigger>
-            <TabsTrigger value="audience" className="text-sm px-4 py-2 rounded-lg">
-              시청자분석
-            </TabsTrigger>
-            <TabsTrigger value="adprice" className="text-sm px-4 py-2 rounded-lg">
-              광고단가
-            </TabsTrigger>
-            <TabsTrigger value="insights" className="text-sm px-4 py-2 rounded-lg">
-              AI인사이트
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto mb-6">
+            <TabsList className="bg-slate-900 border border-slate-800 rounded-xl p-1 h-auto w-max min-w-full gap-0.5">
+              <TabsTrigger value="overview" className="text-sm px-4 py-2 rounded-lg">
+                개요
+              </TabsTrigger>
+              <TabsTrigger value="videos" className="text-sm px-4 py-2 rounded-lg">
+                영상
+              </TabsTrigger>
+              <TabsTrigger value="audience" className="text-sm px-4 py-2 rounded-lg">
+                시청자분석
+              </TabsTrigger>
+              <TabsTrigger value="adprice" className="text-sm px-4 py-2 rounded-lg">
+                광고단가
+              </TabsTrigger>
+              <TabsTrigger value="insights" className="text-sm px-4 py-2 rounded-lg">
+                AI인사이트
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* 개요 탭 */}
           <TabsContent value="overview">

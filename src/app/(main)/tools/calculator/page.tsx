@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Calculator, Sparkles, GitCompare, Info } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { RevenueCalculator } from "@/components/tools/RevenueCalculator";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export const metadata: Metadata = {
   title: "수익 계산기",
@@ -12,6 +13,7 @@ export const metadata: Metadata = {
 export default function CalculatorPage() {
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: "도구", href: "/tools/calculator" }, { label: "수익 계산기" }]} />
       {/* 헤더 */}
       <div>
         <div className="flex items-center gap-2 mb-1">

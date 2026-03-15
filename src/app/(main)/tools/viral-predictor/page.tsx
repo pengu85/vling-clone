@@ -28,6 +28,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 /* ---------- Types ---------- */
 
@@ -346,6 +347,7 @@ export default function ViralPredictorPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: "도구", href: "/tools/viral-predictor" }, { label: "바이럴 예측" }]} />
       {/* 헤더 */}
       <div>
         <div className="flex items-center gap-2 mb-1">

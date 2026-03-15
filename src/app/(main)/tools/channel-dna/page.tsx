@@ -29,6 +29,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 /* ---------- Types ---------- */
 
@@ -280,6 +281,7 @@ export default function ChannelDNAPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: "도구", href: "/tools/channel-dna" }, { label: "채널 DNA" }]} />
       {/* 헤더 */}
       <div>
         <div className="flex items-center gap-2 mb-1">

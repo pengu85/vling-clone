@@ -4,15 +4,19 @@ import { PricingCards } from "@/components/pricing/PricingCards"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { FaqSection } from "@/components/pricing/FaqSection"
+import { Breadcrumb } from "@/components/ui/breadcrumb"
 
 export const metadata = {
-  title: "요금제 | 블링",
+  title: "요금제",
   description: "블링의 다양한 요금제를 비교하고 나에게 맞는 플랜을 선택하세요.",
 }
 
 export default function PricingPage() {
   return (
     <div className="min-h-screen bg-[#0a0e2a]">
+      <div className="mx-auto max-w-screen-xl px-4 pt-6 sm:px-6 lg:px-8">
+        <Breadcrumb items={[{ label: "요금제" }]} />
+      </div>
       {/* ── 히어로 ── */}
       <section className="relative overflow-hidden pt-16 pb-12">
         <div className="pointer-events-none absolute inset-0">

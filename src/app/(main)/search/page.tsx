@@ -7,6 +7,7 @@ import { SearchFilters } from "@/components/search/SearchFilters";
 import { ChannelCard } from "@/components/channel/ChannelCard";
 import { useChannelSearch } from "@/hooks/useChannelSearch";
 import type { SearchFilters as SearchFiltersType } from "@/hooks/useChannelSearch";
+import type { ChannelSearchResult } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Download, Loader2, SearchX } from "lucide-react";
 import { channelsToCSV, downloadCSV } from "@/lib/csv";
@@ -35,31 +36,50 @@ export default function SearchPage() {
   });
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [allResults, setAllResults] = useState<ChannelSearchResult[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const { data, isLoading, isFetching } = useChannelSearch(filters);
   const addQuery = useSearchHistoryStore((s) => s.addQuery);
 
-  const channels = data?.data ?? [];
   const total = data?.pagination?.total ?? 0;
   const totalPages = data?.pagination?.totalPages ?? 1;
-  const currentPage = filters.page ?? 1;
 
-  const pageChannelIds = channels.map((ch) => ch.id);
+  // Reset accumulated results when search query or filters change (not page)
+  useEffect(() => {
+    setAllResults([]);
+    setCurrentPage(1);
+  }, [filters.q, filters.category, filters.country, filters.subscriberMin, filters.subscriberMax, filters.minDailyViews, filters.maxDailyViews, filters.shortsChannel, filters.sort]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Append new page results to accumulated list
+  useEffect(() => {
+    if (data?.data) {
+      if (currentPage === 1) {
+        setAllResults(data.data);
+      } else {
+        setAllResults((prev) => [...prev, ...data.data]);
+      }
+    }
+  }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const channels = allResults;
+
+  const allResultIds = allResults.map((ch) => ch.id);
   const allPageSelected =
-    pageChannelIds.length > 0 && pageChannelIds.every((id) => selectedIds.has(id));
-  const somePageSelected = pageChannelIds.some((id) => selectedIds.has(id));
+    allResultIds.length > 0 && allResultIds.every((id) => selectedIds.has(id));
+  const somePageSelected = allResultIds.some((id) => selectedIds.has(id));
 
   function handleSelectAll() {
     if (allPageSelected) {
       setSelectedIds((prev) => {
         const next = new Set(prev);
-        pageChannelIds.forEach((id) => next.delete(id));
+        allResultIds.forEach((id) => next.delete(id));
         return next;
       });
     } else {
       setSelectedIds((prev) => {
         const next = new Set(prev);
-        pageChannelIds.forEach((id) => next.add(id));
+        allResultIds.forEach((id) => next.add(id));
         return next;
       });
     }
@@ -71,7 +91,7 @@ export default function SearchPage() {
   }
 
   function handleFilterChange(changed: Partial<SearchFiltersType>) {
-    setFilters((prev) => ({ ...prev, ...changed }));
+    setFilters((prev) => ({ ...prev, ...changed, page: 1 }));
   }
 
   function handleExportCSV() {
@@ -91,9 +111,11 @@ export default function SearchPage() {
 
   const handleLoadMore = useCallback(() => {
     if (!isFetching && showLoadMore) {
-      setFilters((prev) => ({ ...prev, page: (prev.page ?? 1) + 1 }));
+      const nextPage = currentPage + 1;
+      setCurrentPage(nextPage);
+      setFilters((prev) => ({ ...prev, page: nextPage }));
     }
-  }, [isFetching, showLoadMore]);
+  }, [isFetching, showLoadMore, currentPage]);
 
   useEffect(() => {
     const el = loadMoreRef.current;
@@ -233,7 +255,7 @@ export default function SearchPage() {
               <ChannelCard
                 key={channel.id}
                 channel={channel}
-                rank={(currentPage - 1) * LIMIT + idx + 1}
+                rank={idx + 1}
               />
             ))}
           </div>
@@ -259,7 +281,7 @@ export default function SearchPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setFilters((prev) => ({ ...prev, page: (prev.page ?? 1) + 1 }))}
+            onClick={handleLoadMore}
             disabled={isFetching}
             className="min-w-[140px] border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-slate-100 gap-2"
           >

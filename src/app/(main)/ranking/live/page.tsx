@@ -1,13 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
 import { Radio, ExternalLink, AlertTriangle } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CATEGORIES } from "@/domain/categories";
-import { formatNumber, formatDate } from "@/lib/formatters";
+import { formatNumber } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 
 interface LiveStreamItem {
@@ -20,24 +17,11 @@ interface LiveStreamItem {
   channelThumbnailUrl: string;
   concurrentViewers: number;
   startedAt: string;
-  category: string;
 }
 
 interface LiveResponse {
   data: LiveStreamItem[];
 }
-
-const LIVE_CATEGORIES = [
-  { value: "all", label: "전체" },
-  { value: "gaming", label: "게임" },
-  { value: "music", label: "음악" },
-  { value: "entertainment", label: "엔터테인먼트" },
-  { value: "sports", label: "스포츠" },
-  { value: "news", label: "뉴스" },
-  { value: "education", label: "교육" },
-  { value: "food", label: "먹방" },
-  { value: "tech", label: "기술/IT" },
-];
 
 function formatElapsed(startedAt: string): string {
   const diff = Date.now() - new Date(startedAt).getTime();
@@ -48,13 +32,10 @@ function formatElapsed(startedAt: string): string {
 }
 
 export default function LiveRankingPage() {
-  const [category, setCategory] = useState("all");
-
   const { data, isLoading, isError, refetch } = useQuery<LiveResponse>({
-    queryKey: ["live-ranking", category],
+    queryKey: ["live-ranking"],
     queryFn: async () => {
-      const params = new URLSearchParams({ category });
-      const res = await fetch(`/api/ranking/live?${params}`);
+      const res = await fetch("/api/ranking/live");
       if (!res.ok) throw new Error("라이브 순위 로딩 실패");
       return res.json();
     },
@@ -80,26 +61,6 @@ export default function LiveRankingPage() {
           </div>
         </div>
 
-        {/* Category Filter */}
-        <div className="mb-5 flex flex-wrap gap-1.5">
-          {LIVE_CATEGORIES.map((cat) => (
-            <Button
-              key={cat.value}
-              variant="ghost"
-              size="sm"
-              onClick={() => setCategory(cat.value)}
-              className={cn(
-                "h-8 rounded-lg px-3 text-sm font-medium transition-colors",
-                category === cat.value
-                  ? "bg-red-600 text-white hover:bg-red-500"
-                  : "bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200"
-              )}
-            >
-              {cat.label}
-            </Button>
-          ))}
-        </div>
-
         {/* Table */}
         <div className="overflow-x-auto rounded-lg border border-slate-800">
           <table className="w-full text-sm">
@@ -119,9 +80,6 @@ export default function LiveRankingPage() {
                 </th>
                 <th className="whitespace-nowrap px-3 py-3 text-right text-xs font-medium text-slate-500">
                   시작 시간
-                </th>
-                <th className="whitespace-nowrap px-3 py-3 text-center text-xs font-medium text-slate-500">
-                  카테고리
                 </th>
               </tr>
             </thead>
@@ -146,9 +104,6 @@ export default function LiveRankingPage() {
                       </td>
                       <td className="px-3 py-3">
                         <Skeleton className="h-4 w-20 bg-slate-800 ml-auto" />
-                      </td>
-                      <td className="px-3 py-3">
-                        <Skeleton className="h-4 w-16 bg-slate-800 mx-auto" />
                       </td>
                     </tr>
                   ))
@@ -223,13 +178,6 @@ export default function LiveRankingPage() {
                         </span>
                       </td>
 
-                      {/* Category */}
-                      <td className="px-3 py-3 text-center">
-                        <span className="inline-block rounded-full bg-slate-800 px-2 py-0.5 text-xs text-slate-400">
-                          {CATEGORIES.find((c) => c.value === item.category)
-                            ?.label || item.category}
-                        </span>
-                      </td>
                     </tr>
                   ))}
             </tbody>

@@ -30,6 +30,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 /* ---------- Types ---------- */
 
@@ -358,6 +359,7 @@ export default function ChannelHealthPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: "도구", href: "/tools/channel-health" }, { label: "채널 건강검진" }]} />
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 mb-1">

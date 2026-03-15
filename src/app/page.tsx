@@ -129,7 +129,7 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-slate-900">
+    <div className="min-h-screen bg-slate-950 text-slate-100">
       {/* ── 네비게이션 ── */}
       <header className="fixed top-0 z-50 w-full border-b border-white/10 bg-[#0a0e2a]/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
@@ -226,14 +226,14 @@ export default function LandingPage() {
       </section>
 
       {/* ── 주요 기능 (4열 그리드) ── */}
-      <section id="features" className="bg-slate-50 py-20 sm:py-24">
+      <section id="features" className="bg-slate-900 py-20 sm:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-12 text-center">
             <Badge variant="secondary" className="mb-3">주요 기능</Badge>
-            <h2 className="text-3xl font-bold text-slate-900 sm:text-4xl">
+            <h2 className="text-3xl font-bold text-white sm:text-4xl">
               마케팅에 필요한 모든 분석을 한곳에
             </h2>
-            <p className="mt-3 text-slate-500">
+            <p className="mt-3 text-slate-400">
               블링은 광고주부터 크리에이터까지 필요한 인사이트를 모두 제공합니다.
             </p>
           </div>
@@ -242,16 +242,16 @@ export default function LandingPage() {
             {features.map(({ icon: Icon, title, description }) => (
               <Card
                 key={title}
-                className="group border-slate-200 bg-white transition-shadow hover:shadow-lg hover:shadow-blue-100"
+                className="group border-slate-700 bg-slate-800 transition-shadow hover:shadow-lg hover:shadow-blue-900/30"
               >
                 <CardHeader>
                   <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-violet-500">
                     <Icon className="h-5 w-5 text-white" />
                   </div>
-                  <CardTitle className="text-slate-900">{title}</CardTitle>
+                  <CardTitle className="text-slate-100">{title}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription className="text-slate-500 text-sm leading-relaxed">
+                  <CardDescription className="text-slate-400 text-sm leading-relaxed">
                     {description}
                   </CardDescription>
                 </CardContent>
@@ -262,26 +262,26 @@ export default function LandingPage() {
       </section>
 
       {/* ── 사용자별 솔루션 (탭) ── */}
-      <section id="solutions" className="py-20 sm:py-24">
+      <section id="solutions" className="bg-slate-950 py-20 sm:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-12 text-center">
             <Badge variant="secondary" className="mb-3">맞춤 솔루션</Badge>
-            <h2 className="text-3xl font-bold text-slate-900 sm:text-4xl">
+            <h2 className="text-3xl font-bold text-white sm:text-4xl">
               누구에게나 최적화된 블링
             </h2>
-            <p className="mt-3 text-slate-500">
+            <p className="mt-3 text-slate-400">
               역할에 따라 필요한 기능이 다릅니다. 당신에게 맞는 솔루션을 찾아보세요.
             </p>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <div className="mb-8 flex justify-center">
-              <TabsList className="h-auto gap-1 p-1 bg-slate-100 rounded-xl">
+              <TabsList className="h-auto gap-1 p-1 bg-slate-800 rounded-xl">
                 {tabItems.map(({ value, label }) => (
                   <TabsTrigger
                     key={value}
                     value={value}
-                    className="rounded-lg px-5 py-2 text-sm font-medium text-slate-600 data-active:bg-white data-active:text-blue-600 data-active:shadow-sm"
+                    className="rounded-lg px-5 py-2 text-sm font-medium text-slate-400 data-active:bg-slate-700 data-active:text-blue-400 data-active:shadow-sm"
                   >
                     {label}
                   </TabsTrigger>
@@ -296,14 +296,14 @@ export default function LandingPage() {
                   <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
                     {/* 텍스트 */}
                     <div>
-                      <h3 className="mb-5 text-2xl font-bold text-slate-900">
+                      <h3 className="mb-5 text-2xl font-bold text-white">
                         {sol.headline}
                       </h3>
                       <ul className="mb-7 space-y-3">
                         {sol.bullets.map((b) => (
                           <li key={b} className="flex items-start gap-3">
                             <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-blue-500" />
-                            <span className="text-slate-600">{b}</span>
+                            <span className="text-slate-400">{b}</span>
                           </li>
                         ))}
                       </ul>
@@ -317,10 +317,10 @@ export default function LandingPage() {
                     </div>
 
                     {/* 스크린샷 플레이스홀더 */}
-                    <div className="flex h-72 items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-gradient-to-br from-slate-50 to-blue-50 lg:h-80">
+                    <div className="flex h-72 items-center justify-center rounded-2xl border-2 border-dashed border-slate-700 bg-gradient-to-br from-slate-900 to-slate-800 lg:h-80">
                       <div className="text-center">
-                        <BarChart3 className="mx-auto mb-3 h-12 w-12 text-slate-300" />
-                        <p className="text-sm text-slate-400">대시보드 스크린샷</p>
+                        <BarChart3 className="mx-auto mb-3 h-12 w-12 text-slate-600" />
+                        <p className="text-sm text-slate-500">대시보드 스크린샷</p>
                       </div>
                     </div>
                   </div>
@@ -429,7 +429,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── 이용 고객 로고 ── */}
-      <section className="border-y border-slate-100 bg-slate-50 py-12">
+      <section className="border-y border-slate-800 bg-slate-900 py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <p className="mb-8 text-center text-sm text-slate-500">
             이미 많은 기업이 블링을 사용하고 있습니다
@@ -438,7 +438,7 @@ export default function LandingPage() {
             {logos.map((name) => (
               <div
                 key={name}
-                className="flex h-10 w-24 items-center justify-center rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-400 shadow-sm"
+                className="flex h-10 w-24 items-center justify-center rounded-lg border border-slate-700 bg-slate-800 text-xs font-medium text-slate-500 shadow-sm"
               >
                 {name}
               </div>
@@ -448,13 +448,13 @@ export default function LandingPage() {
       </section>
 
       {/* ── CTA 섹션 ── */}
-      <section className="py-20 sm:py-28">
+      <section className="bg-slate-950 py-20 sm:py-28">
         <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
           <Badge variant="secondary" className="mb-4">무료 체험</Badge>
-          <h2 className="mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl">
+          <h2 className="mb-4 text-3xl font-bold text-white sm:text-4xl lg:text-5xl">
             지금 무료로 시작하세요
           </h2>
-          <p className="mb-8 text-lg text-slate-500">
+          <p className="mb-8 text-lg text-slate-400">
             신용카드 없이 3일 동안 모든 기능을 체험해보세요. 언제든지 취소
             가능합니다.
           </p>
@@ -468,7 +468,7 @@ export default function LandingPage() {
             </Link>
             <Link
               href="/pricing"
-              className="inline-flex items-center justify-center h-12 w-full border border-slate-200 text-slate-600 hover:bg-slate-50 px-8 text-base sm:w-auto rounded-xl transition-colors"
+              className="inline-flex items-center justify-center h-12 w-full border border-slate-700 text-slate-400 hover:bg-slate-800 px-8 text-base sm:w-auto rounded-xl transition-colors"
             >
               요금제 보기
             </Link>
@@ -480,21 +480,21 @@ export default function LandingPage() {
       </section>
 
       {/* ── 푸터 ── */}
-      <footer className="border-t border-slate-100 bg-slate-50 py-10">
+      <footer className="border-t border-slate-800 bg-slate-950 py-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
             <div className="flex items-center gap-2">
               <div className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-blue-500 to-violet-500">
                 <Play className="h-3 w-3 fill-white text-white" />
               </div>
-              <span className="font-bold text-slate-800">블링</span>
+              <span className="font-bold text-slate-200">블링</span>
             </div>
-            <p className="text-sm text-slate-400">
-              © 2024 블링. 모든 권리 보유.
+            <p className="text-sm text-slate-500">
+              © 2025 블링. 모든 권리 보유.
             </p>
             <div className="flex gap-4 text-sm text-slate-500">
-              <Link href="/terms" className="hover:text-slate-700 transition-colors">이용약관</Link>
-              <Link href="/privacy" className="hover:text-slate-700 transition-colors">개인정보처리방침</Link>
+              <Link href="/terms" className="hover:text-slate-300 transition-colors">이용약관</Link>
+              <Link href="/privacy" className="hover:text-slate-300 transition-colors">개인정보처리방침</Link>
             </div>
           </div>
         </div>

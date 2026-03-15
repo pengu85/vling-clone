@@ -38,6 +38,7 @@ export interface FinderRecommendation {
 export interface FinderResponse {
   recommendations: FinderRecommendation[];
   summary: string;
+  isMock: boolean;
 }
 
 const FINDER_REASONS = [
@@ -150,7 +151,7 @@ export async function runAIFinder(req: FinderRequest): Promise<FinderResponse> {
   const client = getClient();
 
   if (!client) {
-    return { recommendations: [], summary: "" };
+    return { recommendations: [], summary: "", isMock: true };
   }
 
   // Try to fetch real channels from YouTube API
@@ -230,9 +231,10 @@ ${JSON.stringify(channelSummaries, null, 2)}
     return {
       recommendations,
       summary: parsed.summary ?? `"${req.description}" 조건에 맞는 상위 ${recommendations.length}개 채널을 추천합니다.`,
+      isMock: false,
     };
   } catch {
-    return { recommendations: [], summary: "" };
+    return { recommendations: [], summary: "", isMock: true };
   }
 }
 
@@ -247,6 +249,7 @@ export interface InsightResponse {
   audienceInsight: string;
   growthPrediction: string;
   competitorChannels: string[];
+  isMock: boolean;
 }
 
 function getMockInsightResult(): InsightResponse {
@@ -291,6 +294,7 @@ function getMockInsightResult(): InsightResponse {
     growthPrediction:
       "현재 성장 추세를 유지할 경우, 6개월 후 구독자 수가 약 20-30% 증가할 것으로 예측됩니다. 숏폼 콘텐츠 강화 시 30-50% 추가 성장 가능합니다.",
     competitorChannels: ["테크수다", "IT리뷰어", "과학쿠키"],
+    isMock: true,
   };
 }
 
@@ -298,7 +302,6 @@ export async function runAIInsight(channelId: string): Promise<InsightResponse> 
   const client = getClient();
 
   if (!client) {
-    await new Promise((r) => setTimeout(r, 600));
     return getMockInsightResult();
   }
 
@@ -338,6 +341,7 @@ export async function runAIInsight(channelId: string): Promise<InsightResponse> 
       audienceInsight: parsed.audienceInsight ?? "",
       growthPrediction: parsed.growthPrediction ?? "",
       competitorChannels: parsed.competitorChannels ?? [],
+      isMock: false,
     };
   } catch {
     return getMockInsightResult();
@@ -366,6 +370,7 @@ export interface ContentResponse {
     estimatedLength: string;
     tips: string[];
   };
+  isMock: boolean;
 }
 
 function getMockContentResult(req: ContentRequest): ContentResponse {
@@ -412,6 +417,7 @@ function getMockContentResult(req: ContentRequest): ContentResponse {
         "관련 키워드를 제목, 설명, 태그에 자연스럽게 포함",
       ],
     },
+    isMock: true,
   };
 }
 
@@ -419,7 +425,6 @@ export async function runAIContent(req: ContentRequest): Promise<ContentResponse
   const client = getClient();
 
   if (!client) {
-    await new Promise((r) => setTimeout(r, 700));
     return getMockContentResult(req);
   }
 
@@ -486,6 +491,7 @@ competitionScore는 0~100 사이 정수. searchVolume은 "낮음", "보통", "�
         estimatedLength: lengthMap[req.contentType],
         tips: parsed.script?.tips ?? [],
       },
+      isMock: false,
     };
   } catch {
     return getMockContentResult(req);
