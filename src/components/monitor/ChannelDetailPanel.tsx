@@ -237,13 +237,14 @@ export function ChannelDetailPanel({
         {/* Memo */}
         <div className="px-4 pt-4">
           <label className="text-xs text-slate-400 mb-1 block">메모</label>
-          <Input
+          <textarea
             value={memo}
             onChange={(e) => setMemo(e.target.value)}
             onBlur={handleMemoBlur}
             onKeyDown={handleMemoKeyDown}
             placeholder="채널에 대한 메모를 입력하세요..."
-            className="border-slate-700 bg-slate-800 text-slate-200 placeholder:text-slate-500 focus-visible:border-blue-500 focus-visible:ring-blue-500/20"
+            rows={3}
+            className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none"
           />
         </div>
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Header } from "./Header"
 import { Sidebar } from "./Sidebar"
 import { Footer } from "./Footer"
@@ -11,13 +11,14 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-
-  // Restore sidebar state from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem("sidebar-collapsed")
-    if (saved === "true") setSidebarCollapsed(true)
-  }, [])
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return localStorage.getItem('sidebar-collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  })
 
   function handleCollapsedChange(collapsed: boolean) {
     setSidebarCollapsed(collapsed)
@@ -39,7 +40,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             sidebarCollapsed && "md:ml-14"
           )}
         >
-          <main className="flex-1 p-6">
+          <main id="main-content" className="flex-1 p-6">
             {children}
           </main>
           <Footer />

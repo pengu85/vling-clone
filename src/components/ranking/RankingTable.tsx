@@ -159,7 +159,7 @@ export function RankingTable({ data, isLoading }: RankingTableProps) {
                       ch.growthRate30d >= 0 ? "text-emerald-400" : "text-red-400"
                     )}
                   >
-                    {formatGrowthRate(ch.growthRate30d)}
+                    {ch.growthRate30d >= 0 ? "▲" : "▼"}{formatGrowthRate(ch.growthRate30d)}
                   </span>
                 </div>
               </div>
@@ -278,7 +278,7 @@ export function RankingTable({ data, isLoading }: RankingTableProps) {
                             ch.growthRate30d >= 0 ? "text-emerald-400" : "text-red-400"
                           )}
                         >
-                          {formatGrowthRate(ch.growthRate30d)}
+                          {ch.growthRate30d >= 0 ? "▲" : "▼"}{formatGrowthRate(ch.growthRate30d)}
                         </span>
                       </TableCell>
 

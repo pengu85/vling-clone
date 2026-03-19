@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect } from "react";
+import { use, useEffect, useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChannelProfile } from "@/components/channel/ChannelProfile";
@@ -69,10 +69,14 @@ function ChannelDetailSkeleton() {
 export default function ChannelDetailPage({ params }: Props) {
   const { id } = use(params);
 
+  const [activeTab, setActiveTab] = useState("overview");
+
   const { data: channelRes, isLoading: channelLoading, refetch: refetchChannel } = useChannelDetail(id);
-  const { data: videosRes, isLoading: videosLoading } = useChannelVideos(id);
+  const videosEnabled = activeTab === "overview" || activeTab === "videos";
+  const { data: videosRes, isLoading: videosLoading } = useChannelVideos(id, videosEnabled);
   // 90일 데이터 1회만 호출 — 30/60일은 클라이언트에서 슬라이스
-  const { data: trendsData90 } = useChannelTrends(id, 90);
+  const trendsEnabled = activeTab === "overview";
+  const { data: trendsData90 } = useChannelTrends(id, 90, trendsEnabled);
 
   const channel = channelRes?.data;
   const videos = videosRes?.data ?? [];
@@ -131,7 +135,7 @@ export default function ChannelDetailPage({ params }: Props) {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Breadcrumb items={[{ label: "채널 검색", href: "/search" }, { label: channel.title }]} />
-        <Tabs defaultValue="overview">
+        <Tabs defaultValue="overview" onValueChange={setActiveTab}>
           <div className="overflow-x-auto mb-6">
             <TabsList className="bg-slate-900 border border-slate-800 rounded-xl p-1 h-auto w-max min-w-full gap-0.5">
               <TabsTrigger value="overview" className="text-sm px-4 py-2 rounded-lg">

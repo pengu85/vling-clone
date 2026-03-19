@@ -136,6 +136,7 @@ export function Header() {
 
   const {
     suggestions,
+    isLoading: autocompleteLoading,
     isOpen,
     activeIndex,
     setIsOpen,
@@ -177,6 +178,9 @@ export function Header() {
     },
     [clearSuggestions, router]
   )
+
+  // Show dropdown when loading or when results are available
+  const showDropdown = (isOpen || autocompleteLoading) && searchValue.trim() !== ""
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (!isOpen || suggestions.length === 0) return
@@ -220,14 +224,18 @@ export function Header() {
               placeholder="채널명, 키워드로 검색..."
               className="pl-9 bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500 focus-visible:border-violet-500 focus-visible:ring-violet-500/20 h-8 text-sm"
               autoComplete="off"
+              aria-expanded={isOpen}
+              aria-haspopup="listbox"
             />
           </form>
-          {isOpen && (
+          {showDropdown && (
             <AutocompleteDropdown
               suggestions={suggestions}
               activeIndex={activeIndex}
               onSelect={handleSelectChannel}
               onMouseEnter={setActiveIndex}
+              isLoading={autocompleteLoading}
+              query={searchValue}
             />
           )}
         </div>
@@ -302,15 +310,19 @@ export function Header() {
                       placeholder="채널명, 키워드로 검색..."
                       className="pl-9 bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500 h-9 text-sm"
                       autoComplete="off"
+                      aria-expanded={isOpen}
+                      aria-haspopup="listbox"
                     />
                   </div>
                 </form>
-                {isOpen && (
+                {showDropdown && (
                   <AutocompleteDropdown
                     suggestions={suggestions}
                     activeIndex={activeIndex}
                     onSelect={handleSelectChannel}
                     onMouseEnter={setActiveIndex}
+                    isLoading={autocompleteLoading}
+                    query={searchValue}
                   />
                 )}
               </div>
@@ -343,15 +355,19 @@ export function Header() {
                 className="pl-9 bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500 focus-visible:border-violet-500 focus-visible:ring-violet-500/20 h-9 text-sm"
                 autoComplete="off"
                 autoFocus
+                aria-expanded={isOpen}
+                aria-haspopup="listbox"
               />
             </div>
           </form>
-          {isOpen && (
+          {showDropdown && (
             <AutocompleteDropdown
               suggestions={suggestions}
               activeIndex={activeIndex}
               onSelect={handleSelectChannel}
               onMouseEnter={setActiveIndex}
+              isLoading={autocompleteLoading}
+              query={searchValue}
             />
           )}
         </div>

@@ -1,21 +1,14 @@
 "use client";
 
-import { AlertTriangle } from "lucide-react";
+import { ErrorCard } from "@/components/ui/error-card";
 
 export default function TrendingError({ reset }: { error: Error; reset: () => void }) {
   return (
     <div className="min-h-[60vh] flex items-center justify-center">
-      <div className="text-center space-y-4">
-        <AlertTriangle className="mx-auto h-12 w-12 text-yellow-500" />
-        <h2 className="text-lg font-semibold text-slate-200">트렌딩 데이터를 불러올 수 없습니다</h2>
-        <p className="text-sm text-slate-400">잠시 후 다시 시도해주세요</p>
-        <button
-          onClick={reset}
-          className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-500 transition-colors text-sm"
-        >
-          다시 시도
-        </button>
-      </div>
+      <ErrorCard
+        title="트렌딩 데이터를 불러올 수 없습니다"
+        onRetry={reset}
+      />
     </div>
   );
 }

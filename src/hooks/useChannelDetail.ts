@@ -22,10 +22,11 @@ export function useChannelDetail(id: string) {
   });
 }
 
-export function useChannelVideos(id: string) {
+export function useChannelVideos(id: string, enabled = true) {
   return useQuery({
     queryKey: ["channel-videos", id],
     queryFn: () => fetchChannelVideos(id),
     staleTime: 5 * 60 * 1000,
+    enabled,
   });
 }

@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Mail, Lock, User, Building2 } from "lucide-react"
+import { Mail, Lock, User, Building2, Eye, EyeOff } from "lucide-react"
 import { z } from "zod"
 import { signIn } from "next-auth/react"
 
@@ -57,6 +57,16 @@ const signupSchema = z
 type SignupFormData = z.infer<typeof signupSchema>
 type FieldErrors = Partial<Record<keyof SignupFormData, string>>
 
+function getPasswordStrength(password: string): { level: "weak" | "medium" | "strong"; label: string } {
+  if (password.length === 0) return { level: "weak", label: "" }
+  if (password.length < 8) return { level: "weak", label: "약함" }
+  const hasUpper = /[A-Z]/.test(password)
+  const hasNumber = /[0-9]/.test(password)
+  const hasSpecial = /[^A-Za-z0-9]/.test(password)
+  if (hasUpper && hasNumber && hasSpecial) return { level: "strong", label: "강함" }
+  return { level: "medium", label: "보통" }
+}
+
 export function SignupForm() {
   const router = useRouter()
   const [formData, setFormData] = useState<Omit<SignupFormData, "userType"> & { userType: string }>({
@@ -70,6 +80,8 @@ export function SignupForm() {
   const [errors, setErrors] = useState<FieldErrors>({})
   const [serverError, setServerError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value, type, checked } = e.target
@@ -81,6 +93,12 @@ export function SignupForm() {
       setErrors((prev) => ({ ...prev, [name]: undefined }))
     }
     if (serverError) setServerError(null)
+  }
+
+  function handleConfirmPasswordBlur() {
+    if (formData.confirmPassword && formData.confirmPassword !== formData.password) {
+      setErrors((prev) => ({ ...prev, confirmPassword: "비밀번호가 일치하지 않습니다" }))
+    }
   }
 
   function handleUserTypeChange(value: string | null) {
@@ -149,6 +167,8 @@ export function SignupForm() {
       setIsLoading(false)
     }
   }
+
+  const passwordStrength = getPasswordStrength(formData.password)
 
   return (
     <Card className="bg-white/5 backdrop-blur-sm border-white/10 text-white shadow-2xl">
@@ -226,17 +246,64 @@ export function SignupForm() {
               <Input
                 id="signup-password"
                 name="password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 autoComplete="new-password"
                 placeholder="8자 이상 입력하세요"
                 value={formData.password}
                 onChange={handleChange}
                 className={cn(
-                  "h-10 pl-9 bg-white/10 border-white/15 text-white placeholder:text-slate-500 focus-visible:border-blue-400 focus-visible:ring-blue-400/30",
+                  "h-10 pl-9 pr-10 bg-white/10 border-white/15 text-white placeholder:text-slate-500 focus-visible:border-blue-400 focus-visible:ring-blue-400/30",
                   errors.password && "border-red-400 focus-visible:border-red-400"
                 )}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors"
+                aria-label={showPassword ? "비밀번호 숨기기" : "비밀번호 보기"}
+              >
+                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </button>
             </div>
+            {/* Password strength indicator */}
+            {formData.password.length > 0 && (
+              <div className="space-y-1">
+                <div className="flex gap-1">
+                  <div
+                    className={cn(
+                      "h-1 flex-1 rounded-full transition-colors",
+                      passwordStrength.level === "weak" ? "bg-red-500" :
+                      passwordStrength.level === "medium" ? "bg-yellow-500" :
+                      "bg-green-500"
+                    )}
+                  />
+                  <div
+                    className={cn(
+                      "h-1 flex-1 rounded-full transition-colors",
+                      passwordStrength.level === "medium" ? "bg-yellow-500" :
+                      passwordStrength.level === "strong" ? "bg-green-500" :
+                      "bg-white/15"
+                    )}
+                  />
+                  <div
+                    className={cn(
+                      "h-1 flex-1 rounded-full transition-colors",
+                      passwordStrength.level === "strong" ? "bg-green-500" : "bg-white/15"
+                    )}
+                  />
+                </div>
+                <p
+                  className={cn(
+                    "text-xs",
+                    passwordStrength.level === "weak" ? "text-red-400" :
+                    passwordStrength.level === "medium" ? "text-yellow-400" :
+                    "text-green-400"
+                  )}
+                >
+                  {passwordStrength.label}
+                </p>
+              </div>
+            )}
             {errors.password && <p className="text-xs text-red-400">{errors.password}</p>}
           </div>
 
@@ -250,16 +317,25 @@ export function SignupForm() {
               <Input
                 id="confirmPassword"
                 name="confirmPassword"
-                type="password"
+                type={showConfirmPassword ? "text" : "password"}
                 autoComplete="new-password"
                 placeholder="비밀번호를 다시 입력하세요"
                 value={formData.confirmPassword}
                 onChange={handleChange}
+                onBlur={handleConfirmPasswordBlur}
                 className={cn(
-                  "h-10 pl-9 bg-white/10 border-white/15 text-white placeholder:text-slate-500 focus-visible:border-blue-400 focus-visible:ring-blue-400/30",
+                  "h-10 pl-9 pr-10 bg-white/10 border-white/15 text-white placeholder:text-slate-500 focus-visible:border-blue-400 focus-visible:ring-blue-400/30",
                   errors.confirmPassword && "border-red-400 focus-visible:border-red-400"
                 )}
               />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((v) => !v)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors"
+                aria-label={showConfirmPassword ? "비밀번호 숨기기" : "비밀번호 보기"}
+              >
+                {showConfirmPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </button>
             </div>
             {errors.confirmPassword && (
               <p className="text-xs text-red-400">{errors.confirmPassword}</p>

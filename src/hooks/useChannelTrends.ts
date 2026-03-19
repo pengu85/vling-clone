@@ -23,11 +23,12 @@ async function fetchChannelTrends(id: string, period: number): Promise<ChannelTr
   return json.data as ChannelTrendsData;
 }
 
-export function useChannelTrends(id: string, period = 30) {
+export function useChannelTrends(id: string, period = 30, enabled = true) {
   return useQuery({
     queryKey: ["channel-trends", id, period],
     queryFn: () => fetchChannelTrends(id, period),
     staleTime: 10 * 60 * 1000,
+    enabled,
   });
 }
 

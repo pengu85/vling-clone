@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { SearchBar } from "@/components/search/SearchBar";
 import { SearchFilters } from "@/components/search/SearchFilters";
 import { ChannelCard } from "@/components/channel/ChannelCard";
@@ -19,21 +19,37 @@ const LIMIT = 20;
 
 export default function SearchPage() {
   const searchParams = useSearchParams();
-  const initialQuery = searchParams.get("q") ?? "";
+  const router = useRouter();
 
   const [filters, setFilters] = useState<SearchFiltersType>({
-    q: initialQuery,
-    category: "all",
-    country: undefined,
-    subscriberMin: undefined,
-    subscriberMax: undefined,
-    minDailyViews: undefined,
-    maxDailyViews: undefined,
-    shortsChannel: "all",
-    sort: "subscriber",
+    q: searchParams.get("q") ?? "",
+    category: (searchParams.get("category") as SearchFiltersType["category"]) ?? "all",
+    country: searchParams.get("country") ?? undefined,
+    subscriberMin: searchParams.get("subscriberMin") ? Number(searchParams.get("subscriberMin")) : undefined,
+    subscriberMax: searchParams.get("subscriberMax") ? Number(searchParams.get("subscriberMax")) : undefined,
+    minDailyViews: searchParams.get("minDailyViews") ? Number(searchParams.get("minDailyViews")) : undefined,
+    maxDailyViews: searchParams.get("maxDailyViews") ? Number(searchParams.get("maxDailyViews")) : undefined,
+    shortsChannel: (searchParams.get("shortsChannel") as SearchFiltersType["shortsChannel"]) ?? "all",
+    sort: (searchParams.get("sort") as SearchFiltersType["sort"]) ?? "subscriber",
     page: 1,
     limit: LIMIT,
   });
+
+  // Sync filters → URL whenever they change (skip page to avoid noisy history)
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (filters.q) params.set("q", filters.q);
+    if (filters.category && filters.category !== "all") params.set("category", filters.category);
+    if (filters.country) params.set("country", filters.country);
+    if (filters.subscriberMin !== undefined) params.set("subscriberMin", String(filters.subscriberMin));
+    if (filters.subscriberMax !== undefined) params.set("subscriberMax", String(filters.subscriberMax));
+    if (filters.minDailyViews !== undefined) params.set("minDailyViews", String(filters.minDailyViews));
+    if (filters.maxDailyViews !== undefined) params.set("maxDailyViews", String(filters.maxDailyViews));
+    if (filters.shortsChannel && filters.shortsChannel !== "all") params.set("shortsChannel", filters.shortsChannel);
+    if (filters.sort && filters.sort !== "subscriber") params.set("sort", filters.sort);
+    const search = params.toString();
+    router.replace(search ? `/search?${search}` : "/search");
+  }, [filters.q, filters.category, filters.country, filters.subscriberMin, filters.subscriberMax, filters.minDailyViews, filters.maxDailyViews, filters.shortsChannel, filters.sort]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [allResults, setAllResults] = useState<ChannelSearchResult[]>([]);

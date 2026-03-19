@@ -48,6 +48,7 @@ export function CampaignForm({
   const [budget, setBudget] = useState(
     initialData?.budget?.toString() ?? ""
   );
+  const budgetDisplay = budget ? Number(budget).toLocaleString("ko-KR") : "";
   const [targetCategory, setTargetCategory] = useState(
     initialData?.targetCategory ?? "gaming"
   );
@@ -136,11 +137,16 @@ export function CampaignForm({
           예산 (원) <span className="text-red-400">*</span>
         </label>
         <Input
-          type="number"
-          value={budget}
-          onChange={(e) => setBudget(e.target.value)}
-          placeholder="예: 5000000"
-          min={0}
+          type="text"
+          inputMode="numeric"
+          value={budgetDisplay}
+          onChange={(e) => {
+            const raw = e.target.value.replace(/,/g, "");
+            if (raw === "" || /^\d+$/.test(raw)) {
+              setBudget(raw);
+            }
+          }}
+          placeholder="예: 5,000,000"
           className="border-slate-700 bg-slate-800 text-slate-100 placeholder:text-slate-500"
         />
         {errors.budget && (

@@ -23,6 +23,7 @@ import {
   Trophy,
   Target,
   Award,
+  RotateCcw,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -432,17 +433,42 @@ export default function RevenueSimulatorPage() {
     setSubscribers(Number(e.target.value) || 0);
   }, []);
 
+  const handleReset = useCallback(() => {
+    setSubscribers(10000);
+    setCategory("엔터테인먼트");
+    setCountry("한국");
+    setUploadsPerMonth(8);
+    setAvgViews(10000);
+    setGrowthRate(3);
+    setMonths(12);
+    setCustomCpm(null);
+    setSuperChat(0);
+    setMembership(0);
+    setSponsorshipPrice(0);
+    setSponsorshipCount(0);
+  }, []);
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <div className="flex items-center gap-2 mb-1">
-          <LineChartIcon className="h-5 w-5 text-blue-400" />
-          <h1 className="text-xl font-bold text-slate-100">수익 시뮬레이터</h1>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <LineChartIcon className="h-5 w-5 text-blue-400" />
+            <h1 className="text-xl font-bold text-slate-100">수익 시뮬레이터</h1>
+          </div>
+          <p className="text-sm text-slate-400">
+            업로드 빈도, 카테고리, 성장률을 조절하여 미래 수익을 시뮬레이션하세요
+          </p>
         </div>
-        <p className="text-sm text-slate-400">
-          업로드 빈도, 카테고리, 성장률을 조절하여 미래 수익을 시뮬레이션하세요
-        </p>
+        <button
+          type="button"
+          onClick={handleReset}
+          className="flex items-center gap-1.5 shrink-0 rounded-lg border border-slate-700 bg-transparent px-3 py-2 text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+          초기화
+        </button>
       </div>
 
       {/* Main Layout */}

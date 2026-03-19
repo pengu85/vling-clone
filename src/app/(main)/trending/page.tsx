@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
+import Link from "next/link";
 import { Flame, ExternalLink, AlertTriangle } from "lucide-react";
 import {
   Select,
@@ -188,7 +189,11 @@ export default function TrendingPage() {
                   <div className="flex gap-2.5">
                     {/* Channel avatar */}
                     {item.channelThumbnailUrl && (
-                      <div className="shrink-0 mt-0.5">
+                      <Link
+                        href={`/channel/${item.channelId}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="shrink-0 mt-0.5"
+                      >
                         <Image
                           src={item.channelThumbnailUrl}
                           alt={item.channelTitle}
@@ -196,15 +201,19 @@ export default function TrendingPage() {
                           height={36}
                           className="rounded-full object-cover"
                         />
-                      </div>
+                      </Link>
                     )}
                     <div className="min-w-0 flex-1">
                       <h3 className="text-sm font-medium text-slate-200 line-clamp-2 leading-snug">
                         {item.title}
                       </h3>
-                      <p className="mt-1 text-xs text-slate-500 truncate">
+                      <Link
+                        href={`/channel/${item.channelId}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="mt-1 text-xs text-slate-500 truncate block hover:text-blue-400 transition-colors"
+                      >
                         {item.channelTitle}
-                      </p>
+                      </Link>
                       <p className="mt-0.5 text-xs text-slate-600">
                         {formatNumber(item.viewCount)}회 ·{" "}
                         {formatDate(item.publishedAt)}
