@@ -1,6 +1,8 @@
 import Link from "next/link"
 import { Separator } from "@/components/ui/separator"
 
+const deadLinks = new Set(["/about", "/blog", "/faq", "/support", "/contact"])
+
 const footerColumns = [
   {
     title: "기능",
@@ -53,16 +55,28 @@ export function Footer() {
             <div key={col.title}>
               <h4 className="text-sm font-semibold text-slate-200 mb-4">{col.title}</h4>
               <ul className="flex flex-col gap-2.5">
-                {col.links.map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-slate-400 hover:text-slate-200 transition-colors"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
+                {col.links.map((link) => {
+                  const isDead = deadLinks.has(link.href)
+                  return (
+                    <li key={link.href}>
+                      {isDead ? (
+                        <span
+                          className="text-sm text-slate-600 cursor-not-allowed"
+                          title="준비 중"
+                        >
+                          {link.label}
+                        </span>
+                      ) : (
+                        <Link
+                          href={link.href}
+                          className="text-sm text-slate-400 hover:text-slate-200 transition-colors"
+                        >
+                          {link.label}
+                        </Link>
+                      )}
+                    </li>
+                  )
+                })}
               </ul>
             </div>
           ))}

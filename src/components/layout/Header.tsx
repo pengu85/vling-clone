@@ -18,6 +18,7 @@ import {
 import { useAutocomplete } from "@/hooks/useAutocomplete"
 import { AutocompleteDropdown } from "@/components/search/AutocompleteDropdown"
 import type { AutocompleteChannel } from "@/app/api/youtube/autocomplete/route"
+import { SidebarContent } from "@/components/layout/Sidebar"
 
 const navLinks = [
   { label: "채널 검색", href: "/search" },
@@ -278,9 +279,9 @@ export function Header() {
             </SheetTrigger>
             <SheetContent
               side="right"
-              className="bg-slate-900 border-slate-800 w-72 flex flex-col gap-0 p-0"
+              className="bg-slate-900 border-slate-800 w-72 flex flex-col gap-0 p-0 overflow-hidden"
             >
-              <SheetHeader className="p-4 pb-2">
+              <SheetHeader className="p-4 pb-2 flex-shrink-0">
                 <SheetTitle className="text-left">
                   <span className="text-xl font-bold bg-gradient-to-r from-violet-400 to-blue-400 bg-clip-text text-transparent">
                     블링
@@ -289,7 +290,7 @@ export function Header() {
               </SheetHeader>
 
               {/* 모바일 검색 */}
-              <div ref={mobileSearchRef} className="px-4 pb-3 relative">
+              <div ref={mobileSearchRef} className="px-4 pb-3 relative flex-shrink-0">
                 <form onSubmit={(e) => { e.preventDefault(); handleHeaderSearch() }}>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none z-10" />
@@ -314,20 +315,12 @@ export function Header() {
                 )}
               </div>
 
-              {/* 모바일 네비게이션 */}
-              <nav className="px-4 flex flex-col gap-1">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className="px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-800 rounded-md transition-colors"
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-              </nav>
+              {/* 모바일 전체 네비게이션 */}
+              <div className="flex-1 min-h-0">
+                <SidebarContent />
+              </div>
 
-              <div className="px-4 pt-4 mt-auto flex flex-col gap-2">
+              <div className="px-4 pt-2 pb-4 flex-shrink-0 border-t border-slate-800 flex flex-col gap-2">
                 <MobileUserMenu />
               </div>
             </SheetContent>

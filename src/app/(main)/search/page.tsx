@@ -187,8 +187,81 @@ export default function SearchPage() {
         </div>
       </div>
 
-      {/* 테이블 헤더 */}
-      <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900" role="region" aria-label="검색 결과">
+      {/* 모바일 카드 목록 (md 미만) */}
+      <div className="md:hidden rounded-xl border border-slate-800 bg-slate-900" role="region" aria-label="검색 결과">
+        {/* 로딩 스켈레톤 */}
+        {isLoading && (
+          <div>
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-3 px-4 py-3 border-b border-slate-800 last:border-0"
+              >
+                <div className="h-4 w-6 animate-pulse rounded bg-slate-700 shrink-0" />
+                <div className="h-10 w-10 shrink-0 animate-pulse rounded-full bg-slate-700" />
+                <div className="flex-1 space-y-1.5">
+                  <div className="h-3 w-32 animate-pulse rounded bg-slate-700" />
+                  <div className="h-3 w-16 animate-pulse rounded bg-slate-700" />
+                </div>
+                <div className="text-right space-y-1.5">
+                  <div className="h-3 w-14 animate-pulse rounded bg-slate-700 ml-auto" />
+                  <div className="h-3 w-10 animate-pulse rounded bg-slate-700 ml-auto" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 결과 목록 */}
+        {!isLoading && channels.length > 0 && (
+          <div>
+            {channels.map((channel, idx) => (
+              <ChannelCard
+                key={channel.id}
+                channel={channel}
+                rank={idx + 1}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* 에러 상태 */}
+        {isError && (
+          <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+            <AlertTriangle className="mb-3 h-10 w-10 text-red-400" />
+            <p className="text-sm font-medium text-slate-300">
+              검색 중 오류가 발생했습니다
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              잠시 후 다시 시도해주세요.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              className="mt-4 border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700"
+            >
+              다시 시도
+            </Button>
+          </div>
+        )}
+
+        {/* 빈 결과 */}
+        {!isLoading && !isError && channels.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+            <SearchX className="mb-3 h-10 w-10 text-slate-600" />
+            <p className="text-sm font-medium text-slate-400">
+              검색 결과가 없습니다
+            </p>
+            <p className="mt-1 text-xs text-slate-600">
+              다른 키워드나 필터를 시도해보세요.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* 데스크탑 테이블 (md 이상) */}
+      <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-800 bg-slate-900" role="region" aria-label="검색 결과">
         {/* 헤더 행 */}
         <div className="grid grid-cols-[48px_minmax(180px,1fr)_110px_90px_110px_80px_110px_90px_minmax(140px,1fr)_40px] items-center gap-2 border-b border-slate-800 px-4 py-2.5 min-w-[1080px] bg-slate-800/50">
           <div className="text-center text-[10px] font-semibold uppercase tracking-wider text-slate-500">
